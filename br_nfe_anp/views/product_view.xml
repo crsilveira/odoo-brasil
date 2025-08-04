@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="br_nfe_anp_template_form_view" model="ir.ui.view">
+        <field name="br_nfe_anp">br_nfe_anp_template_form_view</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="account.product_template_form_view" />
+        <field name="arch" type="xml">
+            <page name="invoicing" position="after">
+                <page string="Produtos ANP" name="anp" groups="account.group_account_user" >
+                    <group>
+                        <group>
+                            <field name="prodanp" />
+                            <field name="descanp" />
+                            <field name="ufcons" />
+                        </group>
+                        <group>
+                            <field name="pgnn" />                            
+                            <field name="pgni" />
+                            <field name="pglp" />
+                        </group>
+                        <group>
+                            <field name="codif" />
+                            <field name="qtemp" />
+                            <field name="vpart" />
+                        </group>
+                    </group>
+                </page>
+            </page>
+        </field>
+    </record>
+
+</odoo>

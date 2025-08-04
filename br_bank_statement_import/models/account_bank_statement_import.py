@@ -4,6 +4,10 @@
 import io
 import uuid
 import logging
+import unidecode
+import datetime
+import random
+from datetime import date
 
 from odoo import fields, models, _
 from odoo.exceptions import UserError
@@ -19,6 +23,10 @@ except ImportError:
 class AccountBankStatementImport(models.TransientModel):
     _inherit = 'account.bank.statement.import'
 
+    force_format = fields.Boolean(string=u'Forçar formato', default=False)
+    file_format = fields.Selection([('ofx', 'Extrato OFX')],
+                                   string="Formato do Arquivo",
+                                   default='ofx')
     unique_transaction = fields.Boolean(
         string='Gerar ID Único', default=False,
         help="Apenas marque esta opção em caso do arquivo OFX conter \
@@ -34,14 +42,24 @@ class AccountBankStatementImport(models.TransientModel):
                                  domain=[('type', '=', 'bank')])
 
     def _parse_file(self, data_file):
-        if self._check_ofx(data_file):
+        try:
+            data_file = unidecode.unidecode(data_file.decode('cp1252'))
+        except:
+            data_file = unidecode.unidecode(data_file.decode('utf-8')) 
+        data_file = io.BytesIO(data_file.encode('utf-8'))
+        if self.force_format:
+            self._check_ofx(data_file, raise_error=True)
             return self._parse_ofx(data_file)
-        return super(AccountBankStatementImport, self)._parse_file(
-            data_file)
+        else:
+            if self._check_ofx(data_file):
+                return self._parse_ofx(data_file)
+            return super(AccountBankStatementImport, self)._parse_file(
+                data_file)
 
     def _check_ofx(self, data_file, raise_error=False):
         try:
-            OfxParser.parse(io.BytesIO(data_file))
+            #OfxParser.parse(io.BytesIO(data_file))
+            OfxParser.parse(data_file)
             return True
         except Exception as e:
             if raise_error:
@@ -49,23 +67,76 @@ class AccountBankStatementImport(models.TransientModel):
             return False
 
     def _parse_ofx(self, data_file):
-        ofx = OfxParser.parse(io.BytesIO(data_file))
+        #ofx = OfxParser.parse(io.BytesIO(data_file))
+        ofx = OfxParser.parse(data_file)
         transacoes = []
         total = 0.0
+        conta_fornecedor = self.env['account.account'].search([
+            ('name', '=', 'Fornecedores (a Pagar)'),
+            ('user_type_id', '=', 'A Pagar'),
+        ], limit=1).id
+        conta_cliente = self.env['account.account'].search([
+            ('name', '=', 'Clientes (a receber)'),
+            ('user_type_id', '=', 'A Receber'),
+        ], limit=1).id
+        inicio = date(2018, 1, 1)
+        fim = date.today()
+        index = (fim-inicio).days
+        index = int(str(random.randrange(1,999)) + str(index) + '001')
+        #num_trans = 0
+        #'unique_import_id': num_transacao,
         for account in ofx.accounts:
             for transacao in account.statement.transactions:
-                unique_id = transacao.id
-                if self.unique_transaction:
-                    unique_id = str(uuid.uuid4())
+                nosso_numero = transacao.memo[-11:]
+                # se e banco inter entao este e o nosso numero
+                ord = self.env['account.move.line'].search([
+                    ('nosso_numero','=',nosso_numero)
+                ])
+                ref = transacao.id
+                invoice = ''
+                partner_id = ''
+                if ord:
+                    ref = ord.invoice_id.number
+                    invoice = ord.invoice_id.account_id.id
+                    partner_id = ord.partner_id.id
+                else:
+                    data_a = transacao.date - datetime.timedelta(days=10)
+                    data_b = transacao.date + datetime.timedelta(days=10)
+                    if transacao.amount > 0.0 and conta_cliente:                    
+                        partner_id = self.env['account.move.line'].search([
+                            ('debit', '=', float(transacao.amount)),
+                            ('account_id', '=', conta_cliente),
+                            ('reconciled', '=', False),
+                            ('date_maturity', '>', data_a),
+                            ('date_maturity', '<', data_b),
+                        ])
+                    else:
+                        if conta_fornecedor:
+                            partner_id = self.env['account.move.line'].search([
+                                ('credit', '=', float(transacao.amount)*(-1)),
+                                ('account_id', '=', conta_fornecedor),
+                                ('reconciled', '=', False),
+                                ('date_maturity', '>', data_a),
+                                ('date_maturity', '<', data_b),
+                            ])
+                    if partner_id:
+                        if len(partner_id) > 1:
+                            partner_id = ''
+                        else:
+                            partner_id = partner_id.partner_id.id
+
                 transacoes.append({
                     'date': transacao.date,
                     'name': transacao.payee + (
                         transacao.memo and ': ' + transacao.memo or ''),
-                    'ref': transacao.id,
+                    'ref': ref,
                     'amount': transacao.amount,
-                    'unique_import_id': unique_id,
+                    'unique_import_id': "%s-%s" % (transacao.id, index),
                     'sequence': len(transacoes) + 1,
+                    'partner_id': partner_id or '',
+                    'account_id': invoice,
                 })
+                index += 1
                 total += float(transacao.amount)
         # Really? Still using Brazilian Cruzeiros :/
         if ofx.account.statement.currency.upper() == "BRC":

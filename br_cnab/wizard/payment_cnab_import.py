@@ -61,37 +61,46 @@ class L10nBrPaymentCnabImport(models.TransientModel):
         arquivo = Arquivo(bank, arquivo=stream)
         sequence = self.journal_id.l10n_br_sequence_statements
         statement = None
-
+        data_arquivo = datetime.strptime(
+            "{:08}".format(arquivo.header.arquivo_data_de_geracao), "%d%m%Y")
+        statement = self.env['l10n_br.payment.statement'].search([
+            ('date','=',data_arquivo),
+            ('name','=',str(arquivo.header.arquivo_sequencia)),])
+        if statement:
+            raise UserError(_('Arquivo já importado!'))
         for lote in arquivo.lotes:
             for evento in lote.eventos:
-
+                #        'name': sequence.next_by_id(),
                 if not statement:
                     statement = self.env['l10n_br.payment.statement'].create({
                         'journal_id': self.journal_id.id,
-                        'date': date.today(),
+                        'date': data_arquivo,
                         'company_id': self.journal_id.company_id.id,
-                        'name': sequence.next_by_id(),
                         'type': 'receivable',
+                        'name': str(arquivo.header.arquivo_sequencia),
                     })
 
                 code, message = parse_cnab_code(
                     self.journal_id.bank_id.bic,
                     evento.servico_codigo_movimento)
-
                 if (self.journal_id.bank_id.bic == '001'):
                     codigo_convenio_banco = int(
                         lote.header.codigo_convenio_banco[:9])
                     if (len(str(codigo_convenio_banco)) == 7):
-                        nosso_numero = evento.nosso_numero[7:]
+                        nosso_numero = evento.numero_documento[2:]
                     else:
-                        nosso_numero = evento.nosso_numero
+                        nosso_numero = evento.numero_documento[:8]
+                    #nosso_numero = nosso_numero[8:]
                 elif (self.journal_id.bank_id.bic == '237'):
                     nosso_numero = evento.nosso_numero
+                elif (self.journal_id.bank_id.bic == '748'):
+                    nosso_numero = evento.nosso_numero[3:8]
                 else:
                     nosso_numero = int(evento.nosso_numero)
-
+                if not nosso_numero:
+                    nosso_numero = evento.nosso_numero[len(evento.nosso_numero)-6:]
                 payment_line = self.env['payment.order.line'].search(
-                    [('nosso_numero', '=', nosso_numero),
+                    [('nosso_numero', 'like', nosso_numero),
                      ('src_bank_account_id', '=',
                       self.journal_id.bank_account_id.id)])
 
@@ -120,7 +129,7 @@ class L10nBrPaymentCnabImport(models.TransientModel):
                     'cnab_code': code,
                     'cnab_message': message,
                 }
-
+                
                 IMMUTABLE_STATES = ('paid', 'rejected', 'cancelled')
                 if payment_line and payment_line.state in IMMUTABLE_STATES:
                     vals['cnab_message'] = 'Importado previamente'

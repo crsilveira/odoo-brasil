@@ -18,7 +18,18 @@ class PaymentOrder(models.Model):
             raise UserError(
                 _('Ordem de Cobrança não possui Linhas de Cobrança!'))
         self.data_emissao_cnab = datetime.now()
-        self.file_number = self.env['ir.sequence'].next_by_code('cnab.nsa')
+        pord = self.env['payment.order'].search([
+            ('file_number', '>', 0),
+        ], limit=1, order='file_number desc')
+        if pord:
+            number = pord[0].file_number+1
+        else:
+            number = 1
+        if not pord:
+            pord = self.env['payment.order'].browse([self.id])
+        if not self.file_number or self.file_number < pord.file_number:
+            #self.file_number = self.env['ir.sequence'].next_by_code('cnab.nsa')
+            self.file_number = number
         for order_id in self:
             if order_id.line_ids.filtered(
                lambda x: x.state in ('processed', 'rejected', 'paid')):
@@ -27,10 +38,36 @@ class PaymentOrder(models.Model):
 
             cnab = Cnab.get_cnab(
                 order_id.src_bank_account_id.bank_bic, '240')()
+            convenio = order_id.src_bank_account_id.codigo_convenio
             remessa = cnab.remessa(order_id)
+            #for line in order_id.line_ids:
+            #    if line.state != 'cancelled':
+            #        line.write({'state': 'sent'})
             order_id.line_ids.write({'state': 'sent'})
-
-            self.name = self._get_next_code()
+            if order_id.src_bank_account_id.bank_bic == '748':
+                # sicredi
+                if self.data_emissao_cnab.month < 10:
+                    nm = '%s%s%s' %(convenio.zfill(5), 
+                        str(self.data_emissao_cnab.month),
+                        str(self.data_emissao_cnab.day).zfill(2))
+                if self.data_emissao_cnab.month == 10:
+                    nm = '%sO%s' %(convenio.zfill(5), 
+                        str(self.data_emissao_cnab.day).zfill(2))
+                if self.data_emissao_cnab.month == 11:
+                    nm = '%sN%s' %(convenio.zfill(5),
+                        str(self.data_emissao_cnab.day).zfill(2))
+                if self.data_emissao_cnab.month == 12:
+                    nm = '%sD%s' %(convenio.zfill(5),
+                        str(self.data_emissao_cnab.day).zfill(2))
+                if pord.name[:8] == nm:
+                    if pord.name[9:12] == 'CRM':
+                        self.name = nm + '.RM2'
+                    else:
+                        self.name = nm + '.RM%s' %(str(int(pord.name[11:12])+1))
+                else:
+                    self.name = nm + '.CRM'
+            else:
+                self.name = self._get_next_code()
             self.cnab_file = base64.b64encode(remessa.encode('UTF-8'))
 
             self.env['ir.attachment'].create({
@@ -71,7 +108,6 @@ class PaymentOrderLine(models.Model):
             state = 'rejected'
         else:
             ignored = True
-
         self.env['l10n_br.payment.statement.line'].sudo().create({
             'statement_id': statement_id.id,
             'name': self.name,
@@ -122,7 +158,7 @@ class PaymentOrderLine(models.Model):
             'partner_id': self.partner_id.id,
             'debit': float(
                 cnab_vals['valor_titulo'] + cnab_vals['titulo_acrescimos'] -
-                cnab_vals['titulo_desconto']
+                cnab_vals['titulo_desconto'] - cnab_vals['valor_tarifas']
                 ),
             'credit': 0.0,
             'currency_id': self.currency_id.id,
@@ -148,16 +184,6 @@ class PaymentOrderLine(models.Model):
             if not account_id:
                 raise UserError(
                     _('Configure a conta de tarifas bancárias'))
-            aml_tarifa = {
-                'name': 'Tarifas bancárias',
-                'move_id': move.id,
-                'partner_id': self.partner_id.id,
-                'debit': 0.0,
-                'credit': float(cnab_vals['valor_tarifas']),
-                'currency_id': self.currency_id.id,
-                'account_id': self.journal_id.default_debit_account_id.id,
-            }
-            aml_obj.create(aml_tarifa)
             ext_line = {
                 'name': 'Tarifas bancárias (boleto)',
                 'move_id': move.id,
@@ -168,7 +194,6 @@ class PaymentOrderLine(models.Model):
                 'account_id': account_id.id,
             }
             aml_obj.create(ext_line)
-
         counterpart_aml = aml_obj.create(counterpart_aml_dict)
         aml_obj.create(liquidity_aml_dict)
         move.post()

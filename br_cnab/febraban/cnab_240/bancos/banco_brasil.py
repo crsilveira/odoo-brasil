@@ -35,6 +35,7 @@ class BancoBrasil240(Cnab240):
         # 1 - Valor ao dia
         # 2 - Taxa Mensal
         # 3 - Isento (deve ser cadastrado no banco)
+        vals['juros_mora_data'] = 0
         vals['juros_cod_mora'] = int(
             line.payment_mode_id.late_payment_interest_type)
 
@@ -71,7 +72,8 @@ class BancoBrasil240(Cnab240):
         especie_titulo = especie_titulo_banco[
             line.payment_mode_id.boleto_especie]
         vals['especie_titulo'] = especie_titulo
-        vals['multa_codigo'] = vals['codigo_multa']
+        vals['codigo_multa'] = '2'  # 2 - Valor Percentual  25/06/24
+        vals['multa_codigo'] = '2'
         vals['multa_data'] = self.format_date(line.date_maturity)
         vals['multa_percentual'] = Decimal(
             str(self.order.payment_mode_id.late_payment_fee)).quantize(

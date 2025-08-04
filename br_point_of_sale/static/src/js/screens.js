@@ -59,40 +59,25 @@ odoo.define('br_point_of_sale.screens', function (require) {
             });
         },
         click_set_customer_cpf: function(){
-            var self = this;
             var order = this.pos.get_order();
             this.gui.show_popup('textinput',{
                 'title': 'Input CPF',
                 'confirm': function(value) {
                     order.set_client_cpf(value);
-                    self.render_cpf_button(value);
                 }
             })
-        },
-        render_cpf_button: function(value) {
-            if(value.length > 0) {
-                this.$('.js_customer_cpf').addClass("highlight");
-                this.$('.js_customer_cpf').html(`<i class='fa fa-user'></i> CPF: &nbsp; ${value}`);
-            } else {
-                this.$('.js_customer_cpf').removeClass("highlight");
-                this.$('.js_customer_cpf').html(`<i class='fa fa-user'></i> CPF na Nota?`);
-            }
         },
         finalize_validation: function() {
             var self = this;
             var order = this.pos.get_order();
             order.initialize_validation_date();
             this.pos.create_invoice_eletronic(order)
-            .done( () => self.finalize_pos_order())
+            .done( result => self.finalize_pos_order())
             .fail( reason => {
-                if(typeof(reason) == "object" && "data" in reason) {
-                    if(reason.data.type == "xhrtimeout") {
-                        alert("Não foi possível conectar ao servidor!");
-                    } else {
-                        alert("Erro ao realizar emissão da NFCe!");
-                    }
+                if(reason.data.type == "xhrtimeout") {
+                    alert("Não foi possível conectar ao servidor!");
                 } else {
-                    alert(reason);
+                    alert(reason.data.name);
                 }
             })
         },

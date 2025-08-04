@@ -34,6 +34,42 @@
                     <field name="nfe_status" />
                 </div>
             </div>
+            <field name="product_serie_id" position="after">
+                <field name="nfe_number_static" />
+            </field>
+        </field>
+    </record>
+
+    <record id="view_br_account_einvoice_invoice_tree" model="ir.ui.view">
+        <field name="name">br_account_einvoice_invoice_tree</field>
+        <field name="model">account.invoice</field>
+        <field name="inherit_id" ref="account.invoice_tree"/>
+        <field name="arch" type="xml">
+            <field name="number" position="after">
+                <field name="nfe_number"/>
+            </field>    
+        </field>
+    </record>
+
+    <record id="view_br_account_einvoice_invoice_filter" model="ir.ui.view">
+        <field name="name">br_account_einvoice_invoice_filter</field>
+        <field name="model">account.invoice</field>
+        <field name="inherit_id" ref="account.view_account_invoice_filter"/>
+        <field name="arch" type="xml">
+            <field name="number" position="before">
+                <field name="nfe_number" string="Nota Fiscal" filter_domain="[('nfe_number_static','ilike',self)]"/>
+            </field>    
+        </field>
+    </record>
+
+    <record id="view_br_account_einvoice_sup_invoice_tree" model="ir.ui.view">
+        <field name="name">br_account_einvoice_sup_invoice_tree</field>
+        <field name="model">account.invoice</field>
+        <field name="inherit_id" ref="account.invoice_supplier_tree"/>
+        <field name="arch" type="xml">
+            <field name="number" position="after">
+                <field name="nfe_number"/>
+            </field>
         </field>
     </record>
 
@@ -76,6 +112,9 @@
                     <field name="nfe_status" />
                 </div>
             </div>
+            <field name="product_serie_id" position="after">
+                <field name="nfe_number_static" />
+            </field>
         </field>
     </record>
 

@@ -20,6 +20,8 @@ class AccountInvoice(models.Model):
                 item.sending_nfe = docs[0].state == 'draft'
                 item.nfe_status = '%s - %s' % (
                     docs[0].codigo_retorno, docs[0].mensagem_retorno)
+                if not item.nfe_number_static:
+                    item.write({'nfe_number_static': docs[0].numero})
 
     ambiente_nfe = fields.Selection(
         string="Ambiente NFe", related="company_id.tipo_ambiente",
@@ -36,6 +38,8 @@ class AccountInvoice(models.Model):
         string=u"Número NFe", compute="_compute_nfe_number")
     import_declaration_ids = fields.One2many(
         'br_account.import.declaration', 'invoice_id')
+    nfe_number_static = fields.Integer(
+        string=u"Número NFe")
 
     @api.multi
     def action_invoice_draft(self):
@@ -43,7 +47,8 @@ class AccountInvoice(models.Model):
             docs = self.env['invoice.eletronic'].search(
                 [('invoice_id', '=', item.id)])
             for doc in docs:
-                if doc.state in ('done', 'denied'):
+                #if doc.state in ('done', 'denied'):
+                if doc.emissao_doc == '1' and  doc.state in ('done', 'denied', 'cancel'):
                     raise UserError(
                         _('Nota fiscal já emitida para esta fatura - \
                           Duplique a fatura para continuar'))
@@ -64,21 +69,43 @@ class AccountInvoice(models.Model):
         return super(AccountInvoice, self)._return_pdf_invoice(doc)
 
     def action_number(self, serie_id):
+        #if not serie_id:
+        #    return
 
-        if not serie_id:
-            return
+        #inv_inutilized = self.env['invoice.eletronic.inutilized'].search([
+        #    ('serie', '=', serie_id.id)], order='numeration_end desc', limit=1)
 
-        inv_inutilized = self.env['invoice.eletronic.inutilized'].search([
-            ('serie', '=', serie_id.id)], order='numeration_end desc', limit=1)
+        #if not inv_inutilized:
+        #    return serie_id.internal_sequence_id.next_by_id()
 
-        if not inv_inutilized:
-            return serie_id.internal_sequence_id.next_by_id()
-
-        if inv_inutilized.numeration_end >= \
-                serie_id.internal_sequence_id.number_next_actual:
-            serie_id.internal_sequence_id.sudo().write(
-                {'number_next_actual': inv_inutilized.numeration_end + 1})
-        return serie_id.internal_sequence_id.next_by_id()
+        #if inv_inutilized.numeration_end >= \
+        #        serie_id.internal_sequence_id.number_next_actual:
+        #    serie_id.internal_sequence_id.sudo().write(
+        #        {'number_next_actual': inv_inutilized.numeration_end + 1})
+        #return serie_id.internal_sequence_id.next_by_id()
+        nfe = self.env['invoice.eletronic']
+        number_fim = nfe.search([
+            ('serie', '=', serie_id.id),
+            ('model', '=', '55'),
+            ('emissao_doc', '=', '1')],
+            order='numero desc', limit=1).numero + 1
+        # verificando o ultimo numero nfe usado
+        if self.nfe_number_static:
+            # verifica se ja tem alguma nota com este numero
+            number = nfe.search([
+                ('serie', '=', serie_id.id),
+                ('numero','=',self.nfe_number_static),
+                ('model','=','55'),
+                ('emissao_doc','=','1'),
+                ], order='numero desc', limit=1)
+            if number:
+                number_fim = number_fim
+            else:
+                # mantenho o numero
+                number_fim = self.nfe_number_static
+        self.nfe_number_static = number_fim
+        self.reference = number_fim
+        return number_fim
 
     def apply_di_to_items(self):
         for invoice in self:

@@ -71,7 +71,6 @@ class AccountInvoice(models.Model):
         res['tributos_estimados'] = valor
 
         res['incluir_ipi_base'] = line.incluir_ipi_base
-        res['excluir_icms_pis_cofins'] = line.excluir_icms_pis_cofins
         res['icms_tipo_base'] = '3'
         res['icms_aliquota'] = icms.amount or 0.0
         res['icms_st_tipo_base'] = '4'
@@ -122,6 +121,6 @@ class AccountInvoiceLine(models.Model):
     def _prepare_tax_context(self):
         res = super(AccountInvoiceLine, self)._prepare_tax_context()
         res.update({
-            'fiscal_type': self.invoice_id.fiscal_position_type,
+            'fiscal_type': self.fiscal_position_type,
         })
         return res

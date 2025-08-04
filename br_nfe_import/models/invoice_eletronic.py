@@ -692,7 +692,7 @@ class InvoiceEletronic(models.Model):
                 'A empresa não possui uma sequência de produto configurado!')
         ncm = get(nfe_item, 'NCM', str)
         ncm_id = self.env['product.fiscal.classification'].search([
-            ('code', '=', ncm)], limit=1)
+            ('code', '=', ncm)])
 
         category = self.env['product.category'].search(
             [('l10n_br_ncm_category_ids.name', '=', ncm[:4])], limit=1)
@@ -867,7 +867,7 @@ class InvoiceEletronic(models.Model):
 
         cfop = self.env['br_account.cfop'].search([('code', '=', item.cfop)])
         ncm = self.env['product.fiscal.classification'].search([
-            ('code', '=', item.ncm)], limit=1)
+            ('code', '=', item.ncm)])
 
         tax_icms_id = None
         tax_icms_st_id = None
@@ -902,7 +902,7 @@ class InvoiceEletronic(models.Model):
                 'name': purchase_line_id.name,
                 'cfop_id': purchase_line_id.cfop_id.id,
                 'icms_csosn_simples': purchase_line_id.icms_csosn_simples,
-                'icms_cst_normal': purchase_line_id.icms_cst_normal,
+                'icms_cst': purchase_line_id.icms_cst_normal,
                 'icms_aliquota_reducao_base':
                 purchase_line_id.icms_aliquota_reducao_base,
                 'icms_aliquota_credito':
@@ -925,7 +925,7 @@ class InvoiceEletronic(models.Model):
                 'cfop_id': cfop.id,
                 'icms_csosn_simples': item.icms_cst if item.icms_cst and len(
                     item.icms_cst) == 3 else '',
-                'icms_cst_normal': item.icms_cst if item.icms_cst and len(
+                'icms_cst': item.icms_cst if item.icms_cst and len(
                     item.icms_cst) == 2 else '',
                 'icms_aliquota_reducao_base': item.icms_aliquota_reducao_base,
                 'icms_aliquota_credito': item.icms_aliquota_credito,
@@ -988,7 +988,6 @@ class InvoiceEletronic(models.Model):
             'icms_base_calculo': item.icms_base_calculo,
             'icms_valor': item.icms_valor,
             'icms_valor_credito': item.icms_valor_credito,
-            'icms_st_base_calculo_manual': item.icms_st_base_calculo,
             'icms_st_base_calculo': item.icms_st_base_calculo,
             'icms_st_valor': item.icms_st_valor,
             'tax_icms_st_id': None if tax_icms_st_id is None else

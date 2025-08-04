@@ -6,7 +6,7 @@ import pytz
 import base64
 import logging
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 _logger = logging.getLogger(__name__)
@@ -62,7 +62,8 @@ class WizardCartaCorrecaoEletronica(models.TransientModel):
 
         tz = pytz.timezone(self.env.user.partner_id.tz) or pytz.utc
         dt_evento = datetime.utcnow()
-        dt_evento = pytz.utc.localize(dt_evento).astimezone(tz)
+        #dt_evento = pytz.utc.localize(dt_evento).astimezone(tz)
+        dt_evento = dt_evento + timedelta(hours=-3)
 
         carta = {
             'idLote': self.id,

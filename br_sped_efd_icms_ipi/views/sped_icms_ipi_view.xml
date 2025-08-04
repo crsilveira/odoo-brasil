@@ -6,22 +6,27 @@
         <field name="arch" type="xml">
         <form string="Gerar arquivo SPED">
             <group>
-                <field name="company_id" options='{"no_create" : 1, "no_create_edit" : 1}'/>    
+            <group>
+                <field name="company_id" options='{"no_create" : 1, "no_create_edit" : 1}'/> 
+                <field name="date_start"/>
+                <field name="date_end"/>
                 <field name="tipo_arquivo" widget="radio" />
             </group>
             <group col="4">
-                <field name="date_start"/>
-                <field name="date_end"/>
-                <field name="data_vencimento_e316"/>
+                <field name="inventario"/>
+                <field name="date_stock"/>
+                <field name="stock_inv_mov"/>
+                <field name="cod_cta"/>
             </group>
             <group col="4">
                 <field name="ind_ativ"/>
                 <field name="cod_obrigacao"/>
                 <field name="cod_receita"/>
                 <field name="ind_apur"/>
-				<field name="clas_estab_ind"/>
-            </group>    
+                <field name="clas_estab_ind"/>
+            </group> 
             <group col="4">
+                <field name="data_vencimento_e316"/>
                 <field name="vl_sld_cred_ant_difal"/>
                 <field name="vl_sld_cred_transp_difal"/>
                 <field name="vl_sld_cred_ant_fcp"/>
@@ -30,6 +35,7 @@
             <group>
                 <field name="sped_file_name" invisible="1"/>
                 <field widget="binary" height="64" name="sped_file" filename="sped_file_name" />
+            </group>
             </group>
             <field name="log_faturamento" readonly="1"/>
             <footer>

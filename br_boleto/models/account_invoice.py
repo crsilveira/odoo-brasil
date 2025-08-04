@@ -113,6 +113,20 @@ Para prosseguir é necessário preencher os seguintes campos:\n""") + error)
         return res
 
     @api.multi
+    def action_boleto_inter(self):
+        if self.state in ('draft', 'cancel'):
+            raise UserError(
+                _('Fatura provisória ou cancelada não permite emitir boleto'))
+        self = self.with_context({'origin_model': 'account.invoice'})
+        order_line_ids = []
+        #for line in self.receivable_move_line_ids:
+        #    line_id = line.id
+        #order_line_ids = self.env['payment.order.line'].search([('move_line_id','=', line_id)])
+        #boleto_list = order_line_ids.action_register_boleto(self.receivable_move_line_ids)
+        boleto_list = self.env['payment.order.line'].action_register_boleto(self.receivable_move_line_ids)
+        return True
+
+    @api.multi
     def action_print_boleto(self):
         if self.state in ('draft', 'cancel'):
             raise UserError(

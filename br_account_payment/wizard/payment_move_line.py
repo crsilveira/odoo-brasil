@@ -98,6 +98,9 @@ class PaymentAccountMoveLine(models.TransientModel):
             force_counterpart_account=self.move_line_id.account_id.id).\
             create(vals)
         pay.post()
+        for p in pay.move_line_ids:
+            if "Fornecedor" in p.account_id.name and p.account_id != self.invoice_id.account_id:
+                p.write({'account_id': self.invoice_id.account_id.id})
         move_line = self.env['account.move.line'].browse(vals['move_line_id'])
         lines_to_reconcile = (pay.move_line_ids + move_line).filtered(
             lambda l: l.account_id == move_line.account_id)

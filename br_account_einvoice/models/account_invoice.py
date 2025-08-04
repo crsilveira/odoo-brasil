@@ -97,6 +97,9 @@ class AccountInvoice(models.Model):
         return action
 
     def _prepare_edoc_item_vals(self, line):
+        aliquota_icms = line.icms_aliquota
+        if line.cfop_id.code == '1604':
+            aliquota_icms = 0.0
         vals = {
             'name': line.name,
             'product_id': line.product_id.id,
@@ -116,7 +119,7 @@ class AccountInvoice(models.Model):
             'item_pedido_compra': line.item_pedido_compra,
             # - ICMS -
             'icms_cst': line.icms_cst,
-            'icms_aliquota': line.icms_aliquota,
+            'icms_aliquota': aliquota_icms,
             'icms_tipo_base': line.icms_tipo_base,
             'icms_aliquota_reducao_base': line.icms_aliquota_reducao_base,
             'icms_base_calculo': line.icms_base_calculo,
@@ -224,12 +227,17 @@ class AccountInvoice(models.Model):
         }
 
         total_produtos = total_servicos = 0.0
+        total_geral = total_desc = 0.0
         eletronic_items = []
         for inv_line in inv_lines:
             if inv_line.product_type == 'service':
                 total_servicos += inv_line.valor_bruto
+                total_geral += inv_line.valor_liquido
+                total_desc += inv_line.valor_desconto
             else:
                 total_produtos += inv_line.valor_bruto
+                total_geral += inv_line.valor_liquido+inv_line.icms_st_valor+inv_line.ipi_valor
+                total_desc += inv_line.valor_desconto
             eletronic_items.append((0, 0,
                                     self._prepare_edoc_item_vals(inv_line)))
 
@@ -237,6 +245,8 @@ class AccountInvoice(models.Model):
             'eletronic_item_ids': eletronic_items,
             'valor_servicos': total_servicos,
             'valor_bruto': total_produtos,
+            'valor_desconto': total_desc,
+            'valor_final': total_geral,
         })
         return vals
 
@@ -269,6 +279,30 @@ class AccountInvoice(models.Model):
                     eletronic.action_post_validate()
         return res
 
+    # Criei esta funcao pq precisamos Excluir a NFe e Criar novamente, sem cancelar a Fatura
+    @api.multi
+    def criar_doc_eletronico(self):
+        for item in self:
+            if item.product_document_id and item.product_document_id.code not in ('55'):
+                return True
+            edocs = self.env['invoice.eletronic'].search(
+                [('invoice_id', '=', item.id)])
+            if edocs:
+                return True
+            if item.product_document_id.electronic:
+                if item.company_id.l10n_br_nfse_conjugada:
+                    inv_lines = item.invoice_line_ids
+                else:
+                    inv_lines = item.invoice_line_ids.filtered(
+                        lambda x: x.product_id.fiscal_type == 'product')
+                if inv_lines:
+                    edoc_vals = self._prepare_edoc_vals(
+                        item, inv_lines, item.product_serie_id)
+                    eletronic = self.env['invoice.eletronic'].create(edoc_vals)
+                    eletronic.validate_invoice()
+                    eletronic.action_post_validate()
+        return True    
+
     @api.multi
     def action_cancel(self):
         res = super(AccountInvoice, self).action_cancel()
@@ -276,7 +310,8 @@ class AccountInvoice(models.Model):
             edocs = self.env['invoice.eletronic'].search(
                 [('invoice_id', '=', item.id)])
             for edoc in edocs:
-                if edoc.state == 'done':
+                #if edoc.state == 'done':
+                if edoc.state == 'done' and edoc.emissao_doc == '1':
                     raise UserError(
                         _('Documento eletrônico emitido - Cancele o \
                           documento para poder cancelar a fatura'))

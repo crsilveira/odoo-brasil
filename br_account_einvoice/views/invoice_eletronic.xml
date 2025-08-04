@@ -32,11 +32,6 @@
                                     <field name="pedido_compra" />
                                     <field name="item_pedido_compra" />
                                 </group>
-                                <group string="Valores Tributáveis">
-                                    <field name="uom_trib_id" />
-                                    <field name="quantidade_trib" />
-                                    <field name="preco_unitario_trib" />
-                                </group>
                             </group>
                             <label for="name"/>
                             <field name="name"/>
@@ -213,6 +208,7 @@
                                     </group>
                                     <group>
                                         <field name="data_emissao"/>
+					<field name="data_fatura"/>
                                         <field name="data_autorizacao"/>
                                         <field name="ambiente"/>
                                         <field name="finalidade_emissao"/>

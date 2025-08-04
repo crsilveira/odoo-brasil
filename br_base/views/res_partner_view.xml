@@ -10,6 +10,7 @@
             <field name="name" position="after">
                 <field name="legal_name"/>
                 <field name="cnpj_cpf" />
+                <field name="mobile" />
             </field>
         </field>
     </record>

@@ -5,6 +5,7 @@
 import re
 import logging
 import requests
+import json
 
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
@@ -104,25 +105,34 @@ class BrZip(models.Model):
             return zip_ids
 
     def _search_by_cep(self, zip_code):
+        URL = "http://viacep.com.br/ws/{}/json"
+        zip_code = re.sub('[^0-9]', '', zip_code or '')
         try:
-            client = Client('https://apps.correios.com.br/SigepMasterJPA/AtendeClienteService/AtendeCliente?wsdl') # noqa
-            res = client.service.consultaCEP(zip_code)
+            # response = requests.get(URL.format(zip_code), '')  # pylint = missing-timeout
+            url_cep = URL.format(zip_code)
+            response = requests.get(url_cep, timeout=5, proxies=None)  # pylint = missing-timeout
+            if response.status_code == 200:
+                # Transforma o objeto requests em um dict
+                res = json.loads(response.text)
+            # zip_code = re.sub('[^0-9]', '', zip_code or '')
+            # client = Client('https://apps.correios.com.br/SigepMasterJPA/AtendeClienteService/AtendeCliente?wsdl') # noqa
+            # res = client.service.consultaCEP(zip_code)
             state = self.env['res.country.state'].search(
                 [('country_id.code', '=', 'BR'),
                  ('code', '=', res['uf'])])
 
             city = self.env['res.state.city'].search([
-                ('name', '=ilike', res['cidade']),
+                ('name', '=ilike', res['localidade']),
                 ('state_id', '=', state.id)])
 
-            self.env['br.zip'].create({
+            return {
                 'zip': zip_code,
-                'street': res['end'],
+                'street': res['logradouro'],
                 'district': res['bairro'],
                 'country_id': state.country_id.id,
                 'state_id': state.id,
                 'city_id': city.id
-            })
+            }
 
         except Exception as e:
             _logger.error(str(e), exc_info=True)
@@ -157,9 +167,12 @@ class BrZip(models.Model):
 
     @api.multi
     def search_by_zip(self, zip_code):
-        zip_ids = self.zip_search_multi(zip_code=zip_code)
-        if len(zip_ids) == 1:
-            return self.set_result(zip_ids[0])
+        #zip_ids = self.zip_search_multi(zip_code=zip_code)
+        zip_ids = self._search_by_cep(zip_code=zip_code)
+        #if len(zip_ids) == 1:
+        #    return self.set_result(zip_ids[0])
+        if len(zip_ids):
+            return zip_ids
         else:
             return False
 

@@ -131,8 +131,9 @@ class AccountTax(models.Model):
         if "ipi_reducao_bc" in self.env.context:
             reducao_ipi = self.env.context['ipi_reducao_bc']
         base_ipi = price_base
-        if "valor_frete" in self.env.context:
-            base_ipi += self.env.context["valor_frete"]
+        #import pudb;pu.db
+        #if "valor_frete" in self.env.context:
+        #    base_ipi += self.env.context["valor_frete"]
         if "valor_seguro" in self.env.context:
             base_ipi += self.env.context["valor_seguro"]
         if "outras_despesas" in self.env.context:
@@ -167,8 +168,8 @@ class AccountTax(models.Model):
 
         if incluir_ipi:
             base_icms += ipi_value
-        if "valor_frete" in self.env.context:
-            base_icms += self.env.context["valor_frete"]
+        #if "valor_frete" in self.env.context:
+        #    base_icms += self.env.context["valor_frete"]
         if "valor_seguro" in self.env.context:
             base_icms += self.env.context["valor_seguro"]
         if "outras_despesas" in self.env.context:
@@ -181,7 +182,7 @@ class AccountTax(models.Model):
         if not icmsst_tax:
             return []
         vals = self._tax_vals(icmsst_tax)
-
+        #base_icmsst = price_base  # mudei pra fazer nota SAFRA
         base_icmsst = price_base + ipi_value
         reducao_icmsst = 0.0
         aliquota_mva = 0.0
@@ -189,8 +190,8 @@ class AccountTax(models.Model):
             reducao_icmsst = self.env.context['icms_st_aliquota_reducao_base']
         if "icms_st_aliquota_mva" in self.env.context:
             aliquota_mva = self.env.context['icms_st_aliquota_mva']
-        if "valor_frete" in self.env.context:
-            base_icmsst += self.env.context["valor_frete"]
+        #if "valor_frete" in self.env.context:
+        #    base_icmsst += self.env.context["valor_frete"]
         if "valor_seguro" in self.env.context:
             base_icmsst += self.env.context["valor_seguro"]
         if "outras_despesas" in self.env.context:
@@ -209,6 +210,11 @@ class AccountTax(models.Model):
         if 'icms_st_base_calculo_manual' in self.env.context and\
                 self.env.context['icms_st_base_calculo_manual'] > 0:
             base_icmsst = self.env.context['icms_st_base_calculo_manual']
+        # alterei o calculo abaixo adicionando no nome do imposto o 'SEM IPI' pra nao afetar o calculo pra outros clientes
+        # a regra e usada em uma nota da safra
+        if 'SEM IPI' in icmsst_tax.name:
+            icms_tax_x = self.filtered(lambda x: x.domain == 'icms')
+            icms_value = round(price_base * (icms_tax_x.amount / 100), 2)   # mudei pra fazer nota SAFRA
         if icmsst_tax.icms_st_incluso:
             icmsst = round(
                 ((base_icmsst - icms_value)*(icmsst_tax.amount / 100.0) / (
@@ -231,13 +237,15 @@ class AccountTax(models.Model):
         vals_intra = self._tax_vals(icms_intra)
         if icms_fcp:
             vals_fcp = self._tax_vals(icms_fcp)
-        base_icms = price_base + ipi_value
+        # tirei o ipi da base 07/10/21
+        #base_icms = price_base + ipi_value
+        base_icms = price_base
         reducao_icms = 0.0
         if "icms_aliquota_reducao_base" in self.env.context:
             reducao_icms = self.env.context['icms_aliquota_reducao_base']
 
-        if "valor_frete" in self.env.context:
-            base_icms += self.env.context["valor_frete"]
+        #if "valor_frete" in self.env.context:
+        #    base_icms += self.env.context["valor_frete"]
         if "valor_seguro" in self.env.context:
             base_icms += self.env.context["valor_seguro"]
         if "outras_despesas" in self.env.context:
@@ -251,7 +259,6 @@ class AccountTax(models.Model):
         if icms_inter.difal_por_dentro or icms_intra.difal_por_dentro:
             base_icms = base_icms - interestadual
             base_icms = base_icms / (1 - (icms_intra.amount) / 100)
-            vals_inter['base'] = base_icms
 
         interno = icms_intra._compute_amount(base_icms, 1.0)
 
@@ -272,18 +279,11 @@ class AccountTax(models.Model):
             taxes += [vals_fcp]
         return taxes
 
-    def _compute_pis_cofins(self, price_base, icms, difal):
+    def _compute_pis_cofins(self, price_base):
         pis_cofins_tax = self.filtered(lambda x: x.domain in ('pis', 'cofins'))
         if not pis_cofins_tax:
             return []
         taxes = []
-        base_pis_cofins = price_base
-
-        if self.env.context.get('excluir_icms_pis_cofins') and icms:
-            base_pis_cofins = price_base - icms[0]['amount']
-        if self.env.context.get('excluir_difal_pis_cofins') and difal:
-            base_pis_cofins = base_pis_cofins - sum([x['amount'] for x in difal])
-
         for tax in pis_cofins_tax:
             vals = self._tax_vals(tax)
             if tax.domain == 'pis':
@@ -293,8 +293,8 @@ class AccountTax(models.Model):
                         self.env.context['pis_base_calculo_manual'], 1.0)
                     vals['base'] = self.env.context['pis_base_calculo_manual']
                 else:
-                    vals['amount'] = tax._compute_amount(base_pis_cofins, 1.0)
-                    vals['base'] = base_pis_cofins
+                    vals['amount'] = tax._compute_amount(price_base, 1.0)
+                    vals['base'] = price_base
             if tax.domain == 'cofins':
                 if 'cofins_base_calculo_manual' in self.env.context and\
                         self.env.context['cofins_base_calculo_manual'] > 0:
@@ -303,8 +303,8 @@ class AccountTax(models.Model):
                     vals['base'] = self.env.context[
                         'cofins_base_calculo_manual']
                 else:
-                    vals['amount'] = tax._compute_amount(base_pis_cofins, 1.0)
-                    vals['base'] = base_pis_cofins
+                    vals['amount'] = tax._compute_amount(price_base, 1.0)
+                    vals['base'] = price_base
             vals['amount'] = round(vals['amount'], 2)
             taxes.append(vals)
         return taxes
@@ -349,16 +349,10 @@ class AccountTax(models.Model):
         others = self.filtered(lambda x: x.domain == 'outros' or not x.domain)
         if not others:
             return []
-
-        others_vals = []
-
-        for other in others:
-            vals = self._tax_vals(other)
-            vals['amount'] = other._compute_amount(price_base, 0.0)
-            vals['base'] = price_base
-            others_vals.append(vals)
-
-        return others_vals
+        vals = self._tax_vals(others)
+        vals['amount'] = others._compute_amount(price_base, 1.0)
+        vals['base'] = price_base
+        return [vals]
 
     def sum_taxes(self, price_base):
         ipi = self._compute_ipi(price_base)
@@ -373,7 +367,7 @@ class AccountTax(models.Model):
             price_base, ipi[0]['amount'] if ipi else 0.0)
 
         taxes = icms + icmsst + difal + ipi
-        taxes += self._compute_pis_cofins(price_base, icms, difal)
+        taxes += self._compute_pis_cofins(price_base)
         taxes += self._compute_issqn(price_base)
         taxes += self._compute_ii(price_base)
         taxes += self._compute_retention(price_base)

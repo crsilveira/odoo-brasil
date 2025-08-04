@@ -7,10 +7,10 @@
                     <div t-attf-class="#{'col-4' if report_type != 'html' else 'col-sm-7 col-md-5'} ml-auto">
                         <table class="table table-sm">
                             <tr class="border-black o_subtotal" style="">
-                                <td><strong>Subtotal</strong></td>
+				<td><strong>Subtotal</strong></td>
                                 <td class="text-right">
                                     <span t-field="doc.total_bruto" t-options="{'widget': 'monetary', 'display_currency': doc.pricelist_id.currency_id}"/>
-                                </td>
+			        </td>
                             </tr>
                             <tr t-if="doc.total_desconto" name="tr_discount" groups="sale.group_discount_per_so_line" style="border-bottom:1px solid #dddddd;">
                                 <td><strong>Discount ( - )</strong></td>
@@ -18,14 +18,14 @@
                                     <span t-field="doc.total_desconto" t-options="{'widget': 'monetary', 'display_currency': doc.pricelist_id.currency_id}"/>
                                 </td>
                             </tr>
-                            <tr t-if="doc.total_tax" name="tr_taxes" style="border-bottom:1px solid #dddddd;">
-                                <td>
+			    <tr t-if="doc.total_tax" name="tr_taxes" style="border-bottom:1px solid #dddddd;">
+				<td>
                                     <strong>Tax ( + )</strong>
                                 </td>
                                 <td class="text-right">
                                     <span t-field="doc.total_tax" t-options="{'widget': 'monetary', 'display_currency': doc.pricelist_id.currency_id}"/>
-                                </td>
-                            </tr>
+				</td>
+			    </tr>
                             <tr class="border-black">
                                 <td><strong>Total</strong></td>
                                 <td class="text-right">

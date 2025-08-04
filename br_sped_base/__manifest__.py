@@ -24,7 +24,6 @@
         'views/product.xml',
         'views/invoice_eletronic.xml',
         'views/account_fiscal_position_view.xml',
-        'views/account_invoice.xml',
     ],
     'application': True,
 }

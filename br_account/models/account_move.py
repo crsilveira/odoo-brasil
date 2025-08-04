@@ -2,7 +2,7 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
 from odoo.tools import float_compare
-from odoo import models
+from odoo import api, models
 
 
 class AccountMoveLine(models.Model):
@@ -47,3 +47,23 @@ class AccountMoveLine(models.Model):
                     not credit:
                 credit = aml
         return debit, credit
+
+    """
+    @api.model
+    def create(self, vals):
+        # Carlos 22/11/2021 , gravo no campo Name o número da nota fiscal e da parcela,
+        # pra exibir em relatorio para a contabilidade
+        if 'invoice_id' in vals and vals['invoice_id']:
+            inv = self.env['account.invoice'].browse([vals['invoice_id']])
+            if inv:
+                if inv.nfe_number_static:
+                    if len(vals['name']) == 2:
+                        vals['name'] = 'NF-%s(%s)' %(str(inv.nfe_number_static), vals['name'])
+                    else:
+                        vals['name'] = vals['name'] + ' ' + str(inv.nfe_number_static)
+                else:
+                    if vals['name'] == '':
+                        vals['name'] = '01'
+
+        return super(AccountMoveLine, self).create(vals)
+    """

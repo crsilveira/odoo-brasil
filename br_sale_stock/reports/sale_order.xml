@@ -11,14 +11,14 @@
                      <span t-field="doc.total_ipi" t-options="{'widget': 'monetary', 'display_currency': doc.pricelist_id.currency_id}"/>
                  </td>
              </tr>
-             <tr t-if="doc.total_icms_st" name="tr_icms_st">
+	     <tr t-if="doc.total_icms_st" name="tr_icms_st">
                   <td>
                       <strong>ICMS ST</strong>
                   </td>
                   <td class="text-right">
                       <span t-field="doc.total_icms_st" t-options="{'widget': 'monetary', 'display_currency': doc.pricelist_id.currency_id}"/>
                   </td>
-              </tr>
+	     </tr>
         </tr>
         <tr name="tr_taxes" position="after">
             <tr t-if="doc.total_despesas" name="tr_expenses" style="border-top:1px solid #dddddd;">

@@ -13,7 +13,7 @@ PARAMETERS = {
     'ma': {'tam': 9, 'starts_with': '12'},
     'mt': {'tam': 11, 'prod': [3, 2, 9, 8, 7, 6, 5, 4, 3, 2]},
     'ms': {'tam': 9, 'starts_with': '28'},
-    'pa': {'tam': 9, 'starts_with': '15'},
+    'pa': {'tam': 9, 'starts_with': ('15','75','76','77','78','79')},
     'pb': {'tam': 9},
     'pr': {'tam': 10, 'val_tam': 8, 'prod': [3, 2, 7, 6, 5, 4, 3, 2]},
     'pi': {'tam': 9},
@@ -168,7 +168,7 @@ def validate_ie_go(inscr_est):
         return False
 
     # verificando os dois primeiros dígitos
-    if not inscr_est[:2] in ['10', '11', '15']:
+    if not inscr_est[:2] in ['10', '11', '15', '20']:
         return False
 
     # Pega apenas os 8 primeiros dígitos da inscrição estadual e

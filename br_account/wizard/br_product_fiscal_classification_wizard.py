@@ -29,7 +29,7 @@ class ProductFiscalClassificationWizard(models.TransientModel):
         temp = tempfile.NamedTemporaryFile(delete=False)
         temp.write(ncm_string)
         temp.close()
-        with open(temp.name, 'r') as csvfile:
+        with open(temp.name, 'r', encoding='utf-8') as csvfile:
             if not self.has_quote_char:
                 ncm_lines = csv.DictReader(
                     csvfile, delimiter=str(self.ncm_csv_delimiter))
@@ -42,6 +42,7 @@ citação estiver marcado é necessário informá-lo!'))
                     quotechar=self.ncm_quote_char)
             for line in ncm_lines:
                 code = line['codigo']
+                #print(code)
                 ncm_tax = {
                     'federal_nacional': float(line['nacionalfederal']),
                     'federal_importado': float(line['importadosfederal']),

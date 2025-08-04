@@ -20,7 +20,7 @@ class Sicredi240(Cnab240):
         vals['cedente_agencia_dv'] = ''
         conta_dv = vals['cedente_conta_dv']
         vals['cedente_conta_dv'] = str(conta_dv)
-        vals['controlecob_numero'] = self.order.id
+        vals['controlecob_numero'] = self.order.file_number
         vals['controlecob_data_gravacao'] = self.data_hoje()
         return vals
 
@@ -30,17 +30,18 @@ class Sicredi240(Cnab240):
            not line.src_bank_account_id.bra_number:
             raise UserError(
                 _('Código do beneficiario ou número da agência em branco'))
+        n_num = "%s3%s" % (self.format_ano(line.emission_date), line.nosso_numero.zfill(5))
         digito = self.dv_nosso_numero(
             line.src_bank_account_id.bra_number,
             re.sub('[^0-9]', '', line.src_bank_account_id.codigo_convenio),
-            line.nosso_numero)
+            n_num)
         vals['nosso_numero'] = self.format_nosso_numero(
-            line.nosso_numero, digito)
+            n_num, digito)
         vals['nosso_numero_dv'] = int(digito)
         vals['prazo_baixa'] = '0'
         vals['codigo_multa'] = int(vals['codigo_multa'])
         vals['cedente_conta_dv'] = str(vals['cedente_conta_dv'])
-        vals['controlecob_numero'] = self.order.id
+        vals['controlecob_numero'] = self.order.file_number
         vals['controlecob_data_gravacao'] = self.data_hoje()
         if line.payment_mode_id.boleto_especie == '01':
             especie = '03'
@@ -72,8 +73,10 @@ class Sicredi240(Cnab240):
             especie = '99'
         vals['especie_titulo'] = especie
         vals['codigo_multa'] = '1'  # 1 - Valor por dia
-        vlr_doc = line.debit
-        juros_dia = vlr_doc * (
+        #import pudb;pu.db
+        #vlr_doc = line.debit
+        vlr_doc = vals['valor_titulo']
+        juros_dia = float(vlr_doc) * (
             self.order.payment_mode_id.late_payment_interest / 100 / 30)
         vals['juros_mora_taxa'] = Decimal(str(juros_dia)).quantize(
             Decimal('1.00'))
@@ -82,9 +85,10 @@ class Sicredi240(Cnab240):
         return vals
 
     def dv_nosso_numero(self, agencia, codigo_beneficiario, nosso_numero):
-        n_num = "%s2%s" % (self.format_ano(), nosso_numero.zfill(5))
-        composto = "%s05%s%s" % (
-            agencia.zfill(4), codigo_beneficiario.zfill(5), n_num.zfill(8))
+        #n_num = "%s2%s" % (self.format_ano(), nosso_numero.zfill(5))
+        posto = '02' # UA
+        composto = "%s%s%s%s" % (
+            agencia.zfill(4), posto, codigo_beneficiario.zfill(5), nosso_numero.zfill(8))
         constante = '4329876543298765432'
         soma = 0
         for i in range(19):
@@ -93,10 +97,13 @@ class Sicredi240(Cnab240):
         return '0' if (resto == 1 or resto == 0) else 11 - resto
 
     def format_nosso_numero(self, nosso_numero, dv):
-        return "%s2%s%s    " % (self.format_ano(), nosso_numero.zfill(5), dv)
+        #return "%s2%s%s    " % (self.format_ano(), nosso_numero.zfill(5), dv)
+        return "%s%s    " % (nosso_numero.zfill(8), dv)
 
-    def format_ano(self):
-        data = fields.Datetime.now()
-        data = data.split('-')
-        ano = data[0]
-        return ano[2:4]
+    def format_ano(self, data_emissao=None):
+        #data_emissao = fields.Datetime.now()
+        #data = data.split('-')
+        #ano = data.year
+        ano = str(data_emissao.strftime('%y'))
+        ano = ano.zfill(2)
+        return ano

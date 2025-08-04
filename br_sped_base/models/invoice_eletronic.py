@@ -7,10 +7,13 @@ from odoo import api, fields, models
 class InvoiceEletronic(models.Model):
     _inherit = 'invoice.eletronic'
 
-    emissao_doc = fields.Selection(
-        [('0', '0 - Emissão própria'),
-         ('1', '1 - Terceiros')], u'Indicador do Emitente', readonly=True,
-        required=False, default='0')
+    # uso no sped, a importaçao do xml de entrada deve alterar 
+    # para terceiros
+    emissao_doc = fields.Selection([
+        ('1', u'1 - Emissão Própria'),
+        ('2', u'2 - Terceiros'),
+        ], u'Indicador do Emitente', readonly=True,
+        required=False, default='1')
 
 
 class InvoiceEletronicItem(models.Model):

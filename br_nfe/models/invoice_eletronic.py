@@ -53,6 +53,12 @@ class InvoiceEletronic(models.Model):
             "target": "new",
             "context": {'default_eletronic_doc_id': self.id},
         }
+    # uso no sped
+    emissao_doc = fields.Selection([
+        ('1', u'1 - Emissão Própria'),
+        ('2', u'2 - Terceiros'),
+        ], u'Indicador do Emitente', readonly=True, 
+        states=STATE, required=False, default='1')
 
     payment_mode_id = fields.Many2one(
         'l10n_br.payment.mode', string='Modo de Pagamento',
@@ -79,11 +85,6 @@ class InvoiceEletronic(models.Model):
         help=u'Indicador de presença do comprador no\n'
              u'estabelecimento comercial no momento\n'
              u'da operação.', default='0')
-    ind_intermed = fields.Selection([
-        ('0', u'Operação sem intermediador'),
-        ('1', u'Operação em site ou Plataformas de Terceiros'),
-    ], u'Indicativo do Intermediador', readonly=True, states=STATE,
-         default='0')
     ind_dest = fields.Selection([
         ('1', u'1 - Operação Interna'),
         ('2', u'2 - Operação Interestadual'),
@@ -241,7 +242,7 @@ class InvoiceEletronic(models.Model):
     @api.multi
     def _hook_validation(self):
         errors = super(InvoiceEletronic, self)._hook_validation()
-        if self.model in ('55', '65'):
+        if self.model and self.model in ('55', '65'):
             if not self.company_id.partner_id.inscr_est:
                 errors.append(u'Emitente / Inscrição Estadual')
 
@@ -263,14 +264,14 @@ class InvoiceEletronic(models.Model):
                 if not eletr.cofins_cst:
                     errors.append(u'%s - CST do Cofins' % prod)
         # NF-e
-        if self.model == '55':
+        if self.model and self.model == '55':
             if not self.fiscal_position_id:
                 errors.append(u'Configure a posição fiscal')
             if self.company_id.accountant_id and not \
                self.company_id.accountant_id.cnpj_cpf:
                 errors.append(u'Emitente / CNPJ do escritório contabilidade')
         # NFC-e
-        if self.model == '65':
+        if self.model and self.model == '65':
             if not self.company_id.id_token_csc:
                 errors.append("Identificador do CSC inválido")
             if not len(self.company_id.csc or ''):
@@ -286,9 +287,9 @@ class InvoiceEletronic(models.Model):
     def _prepare_eletronic_invoice_item(self, item, invoice):
         res = super(InvoiceEletronic, self)._prepare_eletronic_invoice_item(
             item, invoice)
-        if self.model not in ('55', '65'):
+        if self.model and self.model not in ('55', '65'):
             return res
-
+        xped = item.pedido_compra
         if self.ambiente != 'homologacao':
             xProd = item.product_id.with_context(
                 display_default_code=False).name_get()[0][1]
@@ -309,11 +310,11 @@ class InvoiceEletronic(models.Model):
             'uCom': '{:.6}'.format(item.uom_id.name or ''),
             'qCom': qty_frmt.format(item.quantidade),
             'vUnCom': price_frmt.format(item.preco_unitario),
-            'vProd': "%.02f" % item.valor_bruto,
+            'vProd':  "%.02f" % item.valor_bruto,
             'cEANTrib': item.product_id.barcode or 'SEM GTIN',
-            'uTrib': '{:.6}'.format(item.uom_trib_id.name or item.uom_id.name),
-            'qTrib': qty_frmt.format(item.quantidade_trib or item.quantidade),
-            'vUnTrib': price_frmt.format(item.preco_unitario_trib or item.preco_unitario),
+            'uTrib': '{:.6}'.format(item.uom_id.name or ''),
+            'qTrib': qty_frmt.format(item.quantidade),
+            'vUnTrib': price_frmt.format(item.preco_unitario),
             'vFrete': "%.02f" % item.frete if item.frete else '',
             'vSeg': "%.02f" % item.seguro if item.seguro else '',
             'vDesc': "%.02f" % item.desconto if item.desconto else '',
@@ -337,21 +338,29 @@ class InvoiceEletronic(models.Model):
                 lotes = []
                 if line.product_id.id == item.product_id.id:
                     for lot in line.lot_id:
-                        if lot.name and lot.life_date and lot.use_date:
-                            lote = {
-                                'nLote': lot.name, 
-                                'qLote': line.qty_done,
-                                'dVal': lot.life_date.strftime('%Y-%m-%d'),
-                                'dFab': lot.use_date.strftime('%Y-%m-%d'),
-                            }
-                            lotes.append(lote)
-                        if lot.life_date and lot.use_date:
-                            fab = fields.Datetime.from_string(lot.use_date)
+                        validate = ''
+                        if lot.life_date:
+                            validate =  lot.life_date.strftime('%Y-%m-%d')
+                        fabricado = ''
+                        if lot.use_date:
+                           fabricado =  lot.use_date.strftime('%Y-%m-%d')
+
+                        lote = {
+                            'nLote': lot.name, 
+                            'qLote': line.qty_done,
+                            'dVal': validate,
+                            'dFab': fabricado,
+                        }
+                        lotes.append(lote)
+                        vcto = ''
+                        if lot.life_date:
                             vcto = fields.Datetime.from_string(lot.life_date)
-                            infAdProd += ' Lote: %s, Fab.: %s, Vencto.: %s' \
-                                %(lot.name, fab, vcto)
-                        else:
-                            infAdProd += ' Lote: %s' % lot.name
+                        fab = ''
+                        if lot.use_date:
+                           fab = fields.Datetime.from_string(lot.use_date)
+                        
+                        infAdProd += ' Lote: %s, Fab.: %s, Vencto.: %s' \
+                            %(lot.name, fab, vcto)
                 prod["rastro"] = lotes
         di_vals = []
         for di in item.import_declaration_ids:
@@ -428,6 +437,12 @@ class InvoiceEletronic(models.Model):
                 }
             })
         else:
+            # tirei linhas abaixo deu erro hidraty
+            #        'vBCFCPSTRet': "%.02f" % 0.0,
+            #        'pFCPSTRet': "%.02f" % 0.0,
+            #        'vFCPSTRet': "%.02f" % 0.0,
+            #        'vBCSTDest': "%.02f" % 0.0,
+            #        'vICMSSTDest': "%.02f" % 0.0,                     
             imposto.update({
                 'ICMS': {
                     'orig':  item.origem,
@@ -476,10 +491,11 @@ class InvoiceEletronic(models.Model):
     @api.multi
     def _prepare_eletronic_invoice_values(self):
         res = super(InvoiceEletronic, self)._prepare_eletronic_invoice_values()
-        if self.model not in ('55', '65'):
+        if self.model and self.model not in ('55', '65'):
             return res
 
-        tz = timezone(self.env.user.tz or 'America/Sao_Paulo')
+        #tz = timezone(self.env.user.tz or 'America/Sao_Paulo')
+        tz = timezone(self.env.user.tz or 'America/Campo_Grande')
         dt_emissao = datetime.now(tz).replace(microsecond=0).isoformat()
         dt_saida = fields.Datetime.from_string(self.data_entrada_saida)
         if dt_saida:
@@ -510,8 +526,6 @@ class InvoiceEletronic(models.Model):
             'procEmi': 0,
             'verProc': 'Odoo 11 - Trustcode',
         }
-        if self.ind_pres in ['2', '3', '4', '9']:
-            ide['indIntermed'] = self.ind_intermed or '0'
         # Documentos Relacionados
         documentos = []
         for doc in self.fiscal_document_related_ids:
@@ -615,7 +629,6 @@ class InvoiceEletronic(models.Model):
                 'ISUF': partner.suframa or '',
             }
             if self.model == '65':
-                dest['IE'] = ''
                 dest.update(
                     {'CPF': re.sub('[^0-9]', '', partner.cnpj_cpf or '')})
 
@@ -673,9 +686,13 @@ class InvoiceEletronic(models.Model):
             })
 
         eletronic_items = []
+        desconto = 0.0
+        tt = 0.0
         for item in self.eletronic_item_ids:
             eletronic_items.append(
                 self._prepare_eletronic_invoice_item(item, self))
+            desconto += item.desconto
+            tt += item.valor_liquido
         total = {
             # ICMS
             'vBC': "%.02f" % self.valor_bc_icms,
@@ -749,7 +766,7 @@ class InvoiceEletronic(models.Model):
                 self.transportadora_id.name or '',
                 'IE': re.sub('[^0-9]', '',
                              self.transportadora_id.inscr_est or ''),
-                'xEnder': end_transp
+                'xEnder': end_transp[:60]
                 if self.transportadora_id else '',
                 'xMun': self.transportadora_id.city_id.name or '',
                 'UF': self.transportadora_id.state_id.code or ''
@@ -840,7 +857,7 @@ class InvoiceEletronic(models.Model):
                 'CNPJ': cnpj or '',
                 'xContato': responsavel_tecnico.child_ids[0].name or '',
                 'email': responsavel_tecnico.email or '',
-                'fone': fone,
+                'fone': fone or '',
                 'idCSRT': self.company_id.id_token_csrt or '',
                 'hashCSRT': self._get_hash_csrt() or '',
             }
@@ -910,7 +927,7 @@ class InvoiceEletronic(models.Model):
 
     def _find_attachment_ids_email(self):
         atts = super(InvoiceEletronic, self)._find_attachment_ids_email()
-        if self.model not in ('55'):
+        if self.model and self.model not in ('55'):
             return atts
 
         attachment_obj = self.env['ir.attachment']
@@ -956,7 +973,7 @@ class InvoiceEletronic(models.Model):
     @api.multi
     def action_post_validate(self):
         super(InvoiceEletronic, self).action_post_validate()
-        if self.model not in ('55', '65'):
+        if self.emissao_doc == '2' or (self.model and self.model not in ('55', '65')):
             return
         chave_dict = {
             'cnpj': re.sub('[^0-9]', '', self.company_id.cnpj_cpf),
@@ -991,12 +1008,14 @@ class InvoiceEletronic(models.Model):
             'xml_to_send': base64.encodestring(xml_enviar.encode('utf-8')),
             'xml_to_send_name': 'nfe-enviar-%s.xml' % self.numero,
         })
+        if not self.data_fatura:
+            self.data_fatura = datetime.now()
 
     @api.multi
     def action_send_eletronic_invoice(self):
         super(InvoiceEletronic, self).action_send_eletronic_invoice()
 
-        if self.model not in ('55', '65') or self.state in (
+        if self.model and self.model not in ('55', '65') or self.state in (
            'done', 'denied', 'cancel'):
             return
 
@@ -1124,7 +1143,7 @@ class InvoiceEletronic(models.Model):
 
     @api.multi
     def action_cancel_document(self, context=None, justificativa=None):
-        if self.model not in ('55', '65'):
+        if self.model and self.model not in ('55', '65'):
             return super(InvoiceEletronic, self).action_cancel_document(
                 justificativa=justificativa)
 
@@ -1249,12 +1268,23 @@ class InvoiceEletronic(models.Model):
                 self.sudo().write({
                     'nfe_processada': base64.encodestring(nfe_proc_cancel),
                 })
-        elif self.codigo_retorno == '100':
-            self.action_post_validate()
+        elif retorno_consulta.cStat == 100:
+            if not self.chave_nfe:
+                self.action_post_validate()
             nfe_processada = base64.decodestring(self.xml_to_send).decode('utf-8')
             nfe_proc = gerar_nfeproc(nfe_processada, resp['received_xml'])
-            self.nfe_processada = base64.encodestring(nfe_proc)
-            self.nfe_processada_name = "NFe%08d.xml" % self.numero
+            #self.nfe_processada = base64.encodestring(nfe_proc)
+            #self.nfe_processada_name = "NFe%08d.xml" % self.numero
+            #nfe_proc = gerar_nfeproc(resposta['sent_xml'], recibo_xml)
+            self.sudo().write({
+                'nfe_processada': base64.encodestring(nfe_proc),
+                'nfe_processada_name': "NFe%08d.xml" % self.numero,
+                'state': 'done',
+                'codigo_retorno': '100',
+                'mensagem_retorno': 'Autorizado o uso da NF-e',
+                'protocolo_nfe': retorno_consulta.protNFe.infProt.nProt,
+                'data_autorizacao': retorno_consulta.protNFe.infProt.dhRecbto,
+            })
         else:
             message = "%s - %s" % (retorno_consulta.cStat,
                                    retorno_consulta.xMotivo)

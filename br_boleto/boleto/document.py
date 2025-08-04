@@ -73,6 +73,7 @@ class Boleto:
         self._payment_mode(order_line.payment_mode_id)
         self.boleto.data_vencimento = order_line.date_maturity
         self.boleto.data_documento = order_line.emission_date
+        #self.boleto.data_documento = date.today()
         self.boleto.data_processamento = date.today()
         self.boleto.valor = "%.2f" % order_line.amount_total
         self.boleto.valor_documento = "%.2f" % order_line.amount_total
@@ -81,6 +82,25 @@ class Boleto:
         self.boleto.quantidade = '1'
         # Importante - Número documento deve ser o identificador único da linha
         self.boleto.numero_documento = order_line.identifier
+        demo = ''
+        # 10/03/2021
+        for line in order_line.move_id.line_ids:
+            if hasattr(line.invoice_id, 'invoice_eletronic_ids'):
+                if line.invoice_id.invoice_eletronic_ids:
+                    self.boleto.demonstrativo.append('NFe : ' + str(line.invoice_id.invoice_eletronic_ids.numero))
+                else:
+                    self.boleto.demonstrativo.append('NFe : ' + str(line.invoice_id.nfe_number_static))
+                break
+            else:
+                # 30/09/2024 Clube holambra
+                if not demo:
+                    for inv_line in line.invoice_id.invoice_line_ids:
+                        #valor = str('%.2f' % inv_line.price_subtotal).replace
+                        valor = "{:,.2f}".format(inv_line.price_subtotal)
+                        valor = valor.replace(',','x').replace('.',',').replace('x','.')
+                        descr = '%s - R$ %s' %(inv_line.name[:40], valor)
+                        self.boleto.demonstrativo.append(descr)
+                        demo = 'dados'
 
     def _payment_mode(self, payment_mode_id):
         """
@@ -112,6 +132,7 @@ class Boleto:
         self.boleto.cedente_uf = company.state_id.code
         self.boleto.agencia_cedente = self.getBranchNumber()
         self.boleto.conta_cedente = self.getAccountNumber()
+        self.boleto.dv_cedente = self.account_digit
 
     def _sacado(self, partner):
         """
@@ -158,8 +179,10 @@ class BoletoBB(Boleto):
         # Used only for convenio=6
         # 1: Nosso Numero with 5 positions
         # 2: Nosso Numero with 17 positions
+        conta = order_line.src_bank_account_id
         self.boleto = Boleto.getBoletoClass(order_line)(7, 2)
         self.account_number = order_line.src_bank_account_id.acc_number
+        self.account_digit = conta.acc_number_dig
         self.branch_number = order_line.src_bank_account_id.bra_number
         Boleto.__init__(self, order_line, nosso_numero)
         self.boleto.nosso_numero = self.nosso_numero
