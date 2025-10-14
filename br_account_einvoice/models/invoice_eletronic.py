@@ -827,3 +827,8 @@ class InvoiceEletronicItem(models.Model):
         string="Account Invoice Line",
         comodel_name="account.invoice.line",
         )
+
+    # cofins_cst = fields.Selection(
+    #     CST_PIS_COFINS, string=u'Situação Tributária',
+    #     readonly=True, states=STATE)
+

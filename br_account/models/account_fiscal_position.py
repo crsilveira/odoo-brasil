@@ -7,6 +7,7 @@ from .cst import CST_ICMS
 from .cst import CSOSN_SIMPLES
 from .cst import CST_IPI
 from .cst import CST_PIS_COFINS
+from .cst import CST_IBSCBS
 
 
 class AccountFiscalPositionTaxRule(models.Model):
@@ -25,7 +26,8 @@ class AccountFiscalPositionTaxRule(models.Model):
                                ('csll', 'CSLL'),
                                ('irrf', 'IRRF'),
                                ('inss', 'INSS'),
-                               ('outros', 'Outros')], string=u"Tipo")
+                               ('outros', 'Outros'),
+                               ('ibscbs', 'IBS/CBS')], string=u"Tipo")
     fiscal_position_id = fields.Many2one(
         'account.fiscal.position', string=u"Posição Fiscal")
 
@@ -46,6 +48,7 @@ class AccountFiscalPositionTaxRule(models.Model):
     cst_pis = fields.Selection(CST_PIS_COFINS, string=u"CST PIS")
     cst_cofins = fields.Selection(CST_PIS_COFINS, string=u"CST COFINS")
     cst_ipi = fields.Selection(CST_IPI, string=u"CST IPI")
+    cst_ibscbs = fields.Selection(CST_IBSCBS, string=u"CST IBS/CBS")
     cfop_id = fields.Many2one('br_account.cfop', string=u"CFOP")
     tax_id = fields.Many2one('account.tax', string=u"Imposto")
     tax_icms_st_id = fields.Many2one('account.tax', string=u"ICMS ST",
@@ -128,6 +131,9 @@ class AccountFiscalPosition(models.Model):
     inss_tax_rule_ids = fields.One2many(
         'account.fiscal.position.tax.rule', 'fiscal_position_id',
         string=u"Regras INSS", domain=[('domain', '=', 'inss')], copy=True)
+    ibscbs_tax_rule_ids = fields.One2many(
+        'account.fiscal.position.tax.rule', 'fiscal_position_id',
+        string=u"Regras IBS/CBS", domain=[('domain', '=', 'ibs_cbs')], copy=True)
     fiscal_type = fields.Selection([('saida', 'Saída'),
                                     ('entrada', 'Entrada'),
                                     ('import', 'Entrada Importação')],
@@ -214,7 +220,7 @@ class AccountFiscalPosition(models.Model):
         to_state = partner.state_id
 
         taxes = ('icms', 'simples', 'ipi', 'pis', 'cofins',
-                 'issqn', 'ii', 'irrf', 'csll', 'inss')
+                 'issqn', 'ii', 'irrf', 'csll', 'inss', 'ibscbs')
         res = {}
         for tax in taxes:
             vals = self._filter_rules(

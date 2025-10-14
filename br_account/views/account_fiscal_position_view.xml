@@ -21,6 +21,7 @@
                         <field name="cst_ipi" attrs="{'invisible': [('domain', '!=', 'ipi')]}" />
                         <field name="cst_pis" attrs="{'invisible': [('domain', '!=', 'pis')]}" />
                         <field name="cst_cofins" attrs="{'invisible': [('domain', '!=', 'cofins')]}" />
+                        <field name="cst_ibscbs" attrs="{'invisible': [('domain', '!=', 'ibscbs')]}" />
                     </group>
                 </group>
                 <group name="icms" attrs="{'invisible': [('domain', 'not in', ('icms'))]}">
@@ -191,6 +192,9 @@
                     </group>
                     <group name="ii_rules" string="Regras de II">
                         <field nolabel="1" name="ii_tax_rule_ids" context="{'default_fiscal_position_id': id, 'default_domain': 'ii'}" />
+                    </group>
+                    <group name="ibscbs_rules" string="Regras de IBS/CBS">
+                        <field nolabel="1" name="ibscbs_tax_rule_ids" context="{'default_fiscal_position_id': id, 'default_domain': 'ibscbs'}" />
                     </group>
                 </page>
             </page>

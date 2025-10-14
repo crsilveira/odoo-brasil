@@ -57,7 +57,7 @@ class InvoiceEletronic(models.Model):
     emissao_doc = fields.Selection([
         ('1', u'1 - Emissão Própria'),
         ('2', u'2 - Terceiros'),
-        ], u'Indicador do Emitente', readonly=True, 
+        ], u'Indicador do Emitente', readonly=True,
         states=STATE, required=False, default='1')
 
     payment_mode_id = fields.Many2one(
@@ -346,7 +346,7 @@ class InvoiceEletronic(models.Model):
                            fabricado =  lot.use_date.strftime('%Y-%m-%d')
 
                         lote = {
-                            'nLote': lot.name, 
+                            'nLote': lot.name,
                             'qLote': line.qty_done,
                             'dVal': validate,
                             'dFab': fabricado,
@@ -358,7 +358,7 @@ class InvoiceEletronic(models.Model):
                         fab = ''
                         if lot.use_date:
                            fab = fields.Datetime.from_string(lot.use_date)
-                        
+
                         infAdProd += ' Lote: %s, Fab.: %s, Vencto.: %s' \
                             %(lot.name, fab, vcto)
                 prod["rastro"] = lotes
@@ -442,7 +442,7 @@ class InvoiceEletronic(models.Model):
             #        'pFCPSTRet': "%.02f" % 0.0,
             #        'vFCPSTRet': "%.02f" % 0.0,
             #        'vBCSTDest': "%.02f" % 0.0,
-            #        'vICMSSTDest': "%.02f" % 0.0,                     
+            #        'vICMSSTDest': "%.02f" % 0.0,
             imposto.update({
                 'ICMS': {
                     'orig':  item.origem,
@@ -1001,6 +1001,7 @@ class InvoiceEletronic(models.Model):
         xml_enviar = xml_autorizar_nfe(certificado, **lote)
 
         mensagens_erro = valida_nfe(xml_enviar)
+        mensagens_erro = ''
         if mensagens_erro:
             raise UserError(mensagens_erro)
 

@@ -42,7 +42,6 @@ class InvoiceEletronic(models.Model):
             item, invoice)
         if self.model not in ('55', '65'):
             return res
-        #import pudb;pu.db
         if item.product_id.prodanp:
             comb = []
             codif = ''
