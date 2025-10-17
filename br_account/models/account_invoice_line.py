@@ -9,6 +9,7 @@ from .cst import CST_ICMS
 from .cst import CSOSN_SIMPLES
 from .cst import CST_IPI
 from .cst import CST_PIS_COFINS
+from .cst import CST_IBSCBS
 from .cst import ORIGEM_PROD
 from .res_company import COMPANY_FISCAL_TYPE
 
@@ -501,6 +502,43 @@ class AccountInvoiceLine(models.Model):
         u'Perc INSS', required=True, digits=dp.get_precision('Account'),
         default=0.00)
 
+    # =========================================================================
+    # Impostos de serviço - INSS
+    # =========================================================================
+    ibscbs_cst = fields.Selection(CST_IBSCBS, 'CST IBS/CBS')
+    ibscbs_base_calculo = fields.Float(
+        'Base IBS/CBS', digits=dp.get_precision('Account'), default=0.00)
+    tax_ibsuf_id = fields.Many2one('account.tax', string=u"IBS/UF",
+                                 domain=[('domain', '=', 'ibsuf')])
+    ibs_red = fields.Float(
+        'Redução Base IBS', digits=dp.get_precision('Account'),
+        default=0.00)
+    ibsuf_aliquota = fields.Float(
+        'Perc IBS/UF', digits=dp.get_precision('Account'),
+        default=0.10)
+    ibsuf_valor = fields.Float(
+        'Valor IBS/UF', digits=dp.get_precision('Account'),
+        default=0.00, )
+    tax_ibsmun_id = fields.Many2one('account.tax', string=u"IBS/Mun",
+                                 domain=[('domain', '=', 'ibsmun')])
+    ibsmun_aliquota = fields.Float(
+        'Perc IBS/Mun', digits=dp.get_precision('Account'),
+        default=0.00)
+    ibsmun_valor = fields.Float(
+        'Valor IBS/Mun', digits=dp.get_precision('Account'),
+        default=0.00)
+    tax_cbs_id = fields.Many2one('account.tax', string=u"CBS",
+                                 domain=[('domain', '=', 'cbs')])
+    cbs_aliquota = fields.Float(
+        'Perc CBS',  digits=dp.get_precision('Account'),
+        default=0.90)
+    cbs_red = fields.Float(
+        'Redução Base CBS', digits=dp.get_precision('Account'),
+        default=0.00)
+    cbs_valor = fields.Float(
+        'Valor CBS', digits=dp.get_precision('Account'),
+        default=0.00)
+
     informacao_adicional = fields.Text(string=u"Informações Adicionais")
 
     def _update_tax_from_ncm(self):
@@ -659,4 +697,33 @@ class AccountInvoiceLine(models.Model):
     def _onchange_tax_inss_id(self):
         if self.tax_inss_id:
             self.inss_aliquota = self.tax_inss_id.amount
+        self._update_invoice_line_ids()
+
+    # Reforma tributária - IBS/CBS
+    def _base_ibscbs(self):
+        valor_bruto = self.price_unit * self.quantity
+        desconto = valor_bruto * self.discount / 100.0
+        subtotal = valor_bruto - desconto
+        return subtotal
+
+    @api.onchange('tax_ibsuf_id')
+    def _onchange_tax_ibsuf_id(self):
+        if self.tax_ibsuf_id:
+            self.ibscbs_base_calculo = self._base_ibscbs()
+            self.ibsuf_aliquota = self.tax_ibsuf_id.amount
+            self.ibsuf_valor = self.ibscbs_base_calculo * (self.ibsuf_aliquota / 100)
+        self._update_invoice_line_ids()
+
+    @api.onchange('tax_ibsmun_id')
+    def _onchange_tax_ibsmun_id(self):
+        if self.tax_ibsmun_id:
+            self.ibsmun_aliquota = self.tax_ibsmun_id.amount
+            self.ibsmun_valor = self.ibscbs_base_calculo * (self.ibsmun_aliquota / 100)
+        self._update_invoice_line_ids()
+
+    @api.onchange('tax_cbs_id')
+    def _onchange_tax_cbs_id(self):
+        if self.tax_cbs_id:
+            self.cbs_aliquota = self.tax_cbs_id.amount
+            self.cbs_valor = self.ibscbs_base_calculo * (self.cbs_aliquota / 100)
         self._update_invoice_line_ids()

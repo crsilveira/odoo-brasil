@@ -474,6 +474,9 @@ class InvoiceEletronic(models.Model):
                     'vIPI': "%.02f" % item.ipi_valor
                 },
             })
+        if self.account_invoice_line_id.ibscbs_cst:
+            # Retorma tributária
+            x = 0
         if item.tem_difal:
             imposto['ICMSUFDest'] = {
                 'vBCUFDest': "%.02f" % item.icms_bc_uf_dest,

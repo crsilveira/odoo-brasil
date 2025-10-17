@@ -23,6 +23,18 @@
                         <separator colspan="4" string="CNAE Secundários"/>
                         <field colspan="4" nolabel="1" name="cnae_secondary_ids"/>
                     </page>
+                    <page name="cbsibs" string="CBS / IBS">
+                        <group>
+                            <field name="ibscbs_cst"/>
+                            <field name="cbs_red"/>
+                            <field name="cbs_aliquota"/>
+                        </group>
+                        <group>
+                            <field name="ibs_red"/>
+                            <field name="ibsuf_aliquota"/>
+                            <field name="ibsmun_aliquota"/>
+                        </group>
+                    </page>
                 </notebook>
             </field>
         </record>

@@ -74,6 +74,12 @@ class AccountFiscalPositionTaxRule(models.Model):
         string=u"ICMS Intra", domain=[('domain', '=', 'icms_intra')])
     tax_icms_fcp_id = fields.Many2one(
         'account.tax', string=u"% FCP", domain=[('domain', '=', 'fcp')])
+    tax_ibsuf_id = fields.Many2one('account.tax', string=u"IBS/UF",
+                                     domain=[('domain', '=', 'ibsuf')])
+    tax_ibsmun_id = fields.Many2one('account.tax', string=u"IBS/MUN",
+                                     domain=[('domain', '=', 'ibsmun')])
+    tax_cbs_id = fields.Many2one('account.tax', string=u"CBS",
+                                     domain=[('domain', '=', 'cbs')])
 
 
 class AccountFiscalPosition(models.Model):
@@ -133,7 +139,7 @@ class AccountFiscalPosition(models.Model):
         string=u"Regras INSS", domain=[('domain', '=', 'inss')], copy=True)
     ibscbs_tax_rule_ids = fields.One2many(
         'account.fiscal.position.tax.rule', 'fiscal_position_id',
-        string=u"Regras IBS/CBS", domain=[('domain', '=', 'ibs_cbs')], copy=True)
+        string=u"Regras IBS/CBS", domain=[('domain', '=', 'ibscbs')], copy=True)
     fiscal_type = fields.Selection([('saida', 'Saída'),
                                     ('entrada', 'Entrada'),
                                     ('import', 'Entrada Importação')],

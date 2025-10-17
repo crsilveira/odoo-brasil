@@ -21,8 +21,23 @@
                         <field name="cst_ipi" attrs="{'invisible': [('domain', '!=', 'ipi')]}" />
                         <field name="cst_pis" attrs="{'invisible': [('domain', '!=', 'pis')]}" />
                         <field name="cst_cofins" attrs="{'invisible': [('domain', '!=', 'cofins')]}" />
-                        <field name="cst_ibscbs" attrs="{'invisible': [('domain', '!=', 'ibscbs')]}" />
                     </group>
+                </group>
+                <!-- attrs="{'invisible': [('domain', 'not in', ('ibscbs', 'ibsuf', 'ibsmun', 'cbs'))]}" -->
+                <!-- attrs="{'invisible': [('domain', 'not in', ('cbs'))]}" -->
+                <!-- attrs="{'invisible': [('domain', 'not in', ('ibscbs', 'ibsuf', 'ibsmun', 'cbs'))]}" -->
+                <!-- attrs="{'invisible': [('domain', 'not in', ('ibsuf'))]}" -->
+                <!-- attrs="{'invisible': [('domain', 'not in', ('ibsmun'))]}"  -->
+                <group name="ibscbs">
+                    <group>
+                        <field name="cst_ibscbs"  />
+                        <field name="tax_ibsuf_id"  />
+                        <field name="tax_ibsmun_id" />
+                        <field name="tax_cbs_id"  />
+                    </group>
+                    <group>
+                        <!-- <field name="reducao_ibscbs" /> -->
+                </group>
                 </group>
                 <group name="icms" attrs="{'invisible': [('domain', 'not in', ('icms'))]}">
                     <group>
@@ -194,7 +209,18 @@
                         <field nolabel="1" name="ii_tax_rule_ids" context="{'default_fiscal_position_id': id, 'default_domain': 'ii'}" />
                     </group>
                     <group name="ibscbs_rules" string="Regras de IBS/CBS">
-                        <field nolabel="1" name="ibscbs_tax_rule_ids" context="{'default_fiscal_position_id': id, 'default_domain': 'ibscbs'}" />
+                        <field nolabel="1" name="ibscbs_tax_rule_ids" context="{'default_fiscal_position_id': id, 'default_domain': 'ibscbs'}" >
+                            <tree>
+                                <field name="sequence" widget="handle"/>
+                                <field name="name" />
+                                <field name="tax_id" />
+                                <field name="cst_ibscbs" />
+                                <!-- <field name="reducao_ibscbs" /> -->
+                                <field name="tax_ibsuf_id" />
+                                <field name="tax_ibsmun_id" />
+                                <field name="tax_cbs_id" />
+                            </tree>
+                        </field>
                     </group>
                 </page>
             </page>

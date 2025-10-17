@@ -48,6 +48,9 @@ class AccountTaxTemplate(models.Model):
                                ('irrf', 'IRRF'),
                                ('inss', 'INSS'),
                                ('ibscbs', 'IBS/CBS'),
+                               ('ibsuf', 'IBS/UF'),
+                               ('ibsmun', 'IBS/MUN'),
+                               ('cbs', 'CBS'),
                                ('outros', 'Outros')], string="Tipo")
     amount_type = fields.Selection(selection_add=[('icmsst', 'ICMS ST')])
 
@@ -79,7 +82,9 @@ class AccountTax(models.Model):
                                ('csll', 'CSLL'),
                                ('irrf', 'IRRF'),
                                ('inss', 'INSS'),
-                               ('ibscbs', 'IBS/CBS'),
+                               ('ibsuf', 'IBS UF'),
+                               ('ibsmun', 'IBS MUN'),
+                               ('cbs', 'CBS'),
                                ('outros', 'Outros')], string="Tipo")
     amount_type = fields.Selection(selection_add=[('icmsst', 'ICMS ST')])
     difal_por_dentro = fields.Boolean(string="Calcular Difal por Dentro?")
@@ -89,7 +94,7 @@ class AccountTax(models.Model):
     @api.onchange('domain')
     def _onchange_domain_tax(self):
         if self.domain in ('icms', 'pis', 'cofins', 'issqn', 'ii',
-                           'icms_inter', 'icms_intra', 'fcp', 'ibscbs'):
+                           'icms_inter', 'icms_intra', 'fcp', 'ibsuf', 'ibsmun', 'cbs'):
             self.price_include = True
             self.amount_type = 'division'
         if self.domain in ('icmsst', 'ipi'):

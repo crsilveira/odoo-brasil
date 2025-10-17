@@ -4,6 +4,7 @@
 
 from odoo import models, fields
 from odoo.addons import decimal_precision as dp
+from .cst import CST_IBSCBS
 
 COMPANY_FISCAL_TYPE = [
     ('1', 'Simples Nacional'),
@@ -34,3 +35,19 @@ class ResCompany(models.Model):
         'company_id', 'cnae_id', u'CNAE Secundários')
 
     accountant_id = fields.Many2one('res.partner', string="Contador")
+    ibscbs_cst = fields.Selection(CST_IBSCBS, 'CST IBS/CBS')
+    ibs_red = fields.Float(
+        'Redução Base IBS', digits=dp.get_precision('Account'),
+        default=0.00)
+    ibsuf_aliquota = fields.Float(
+        'Perc IBS/UF', digits=dp.get_precision('Account'),
+        default=0.10)
+    ibsmun_aliquota = fields.Float(
+        'Perc IBS', digits=dp.get_precision('Account'),
+        default=0.00)
+    cbs_aliquota = fields.Float(
+        'Perc CBS',  digits=dp.get_precision('Account'),
+        default=0.90)
+    cbs_red = fields.Float(
+        'Redução Base CBS', digits=dp.get_precision('Account'),
+        default=0.00)
