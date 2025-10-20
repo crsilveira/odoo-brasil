@@ -474,9 +474,28 @@ class InvoiceEletronic(models.Model):
                     'vIPI': "%.02f" % item.ipi_valor
                 },
             })
-        if self.account_invoice_line_id.ibscbs_cst:
+        if item.account_invoice_line_id.ibscbs_cst:
             # Retorma tributária
-            x = 0
+            line = item.account_invoice_line_id
+            imposto['IBSCBS'] = {
+                'CST': line.ibscbs_cst[:3],
+                'cClassTrib': line.ibscbs_cst[3:],
+                'gIBSCBS': {
+                    'vBC': "%.02f" % line.ibscbs_base_calculo,
+                    'gIBSUF': {
+                        'pIBSUF': line.ibsuf_aliquota,
+                        'vIBSUF': "%.02f" % line.ibsuf_valor,
+                    },
+                    'gIBSMun': {
+                        'pIBSMun': line.ibsmun_aliquota,
+                        'vIBSMun': "%.02f" % line.ibsmun_valor,
+                    },
+                    'gCBS': {
+                        'pCBS': line.cbs_aliquota,
+                        'vCBS': "%.02f" % line.cbs_valor,
+                    },
+                }
+            }
         if item.tem_difal:
             imposto['ICMSUFDest'] = {
                 'vBCUFDest': "%.02f" % item.icms_bc_uf_dest,

@@ -503,7 +503,7 @@ class AccountInvoiceLine(models.Model):
         default=0.00)
 
     # =========================================================================
-    # Impostos de serviço - INSS
+    # Reforma Tributária IBS/CBS
     # =========================================================================
     ibscbs_cst = fields.Selection(CST_IBSCBS, 'CST IBS/CBS')
     ibscbs_base_calculo = fields.Float(

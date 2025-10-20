@@ -94,9 +94,9 @@ CST_PIS_COFINS = [
 ]
 
 CST_IBSCBS = [
-    ('0001', u'Tributação integral'),
-    ('2001', u'200-001 Alíquota zero'),
-    ('2002', u'200-002 Alíquota zero apenas CBS e reduzida em 60% para IBS'),
-    ('2003', u'200-003 Alíquota reduzida em 80%'),
-    ('2004', u'200-004 Alíquota reduzida em 70% (inserido)'),
+    ('000001', u'Tributação integral'),
+    ('200001', u'200-001 Alíquota zero'),
+    ('200002', u'200-002 Alíquota zero apenas CBS e reduzida em 60% para IBS'),
+    ('200003', u'200-003 Alíquota reduzida em 80%'),
+    ('200004', u'200-004 Alíquota reduzida em 70% (inserido)'),
 ]
