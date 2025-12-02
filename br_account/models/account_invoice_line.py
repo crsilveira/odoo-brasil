@@ -24,6 +24,35 @@ class AccountInvoiceLine(models.Model):
         company = self.env['res.company'].browse(self.env.user.company_id.id)
         return company.fiscal_type
 
+    # Reforma tributária - IBS/CBS
+    def _base_ibscbs(self):
+        valor_bruto = self.price_unit * self.quantity
+        desconto = valor_bruto * self.discount / 100.0
+        subtotal = valor_bruto - desconto
+        return subtotal
+
+    def _prepare_tax_ibscbs(self):
+        if self.invoice_id.fiscal_position_id and self.invoice_id.fiscal_position_id.ibscbs_tax_rule_ids:
+            for ibscbs in self.invoice_id.fiscal_position_id.ibscbs_tax_rule_ids:
+                self.ibscbs_cst = ibscbs.cst_ibscbs
+                self.ibscbs_base_calculo = self._base_ibscbs()
+                self.ibsuf_aliquota = ibscbs.tax_ibsuf_id.amount
+                self.ibsuf_valor = self.ibscbs_base_calculo * (ibscbs.tax_ibsuf_id.amount / 100)
+                self.ibsmun_aliquota = ibscbs.tax_ibsmun_id.amount
+                self.ibsmun_valor = self.ibscbs_base_calculo * (ibscbs.tax_ibsmun_id.amount / 100)
+                self.cbs_aliquota = ibscbs.tax_cbs_id.amount
+                self.cbs_valor = self.ibscbs_base_calculo * (ibscbs.tax_cbs_id.amount / 100)
+        elif self.invoice_id.company_id.ibscbs_cst:
+            self.ibscbs_cst = self.invoice_id.company_id.ibscbs_cst
+            self.ibscbs_aliquota = self.invoice_id.company_id.ibsuf_aliquota + self.invoice_id.company_id.ibsmun_aliquota + self.invoice_id.company_id.cbs_aliquota
+            self.ibscbs_base_calculo = self._base_ibscbs()
+            self.ibsuf_aliquota = self.invoice_id.company_id.ibsuf_aliquota
+            self.ibsuf_valor = self.ibscbs_base_calculo * (self.invoice_id.company_id.ibsuf_aliquota / 100)
+            self.ibsmun_aliquota = self.invoice_id.company_id.ibsmun_aliquota
+            self.ibsmun_valor = self.ibscbs_base_calculo * (self.invoice_id.company_id.ibsmun_aliquota / 100)
+            self.cbs_aliquota = self.invoice_id.company_id.cbs_aliquota
+            self.cbs_valor = self.ibscbs_base_calculo * (self.invoice_id.company_id.cbs_aliquota / 100)
+
     def _prepare_tax_context(self):
         return {
             'incluir_ipi_base': self.incluir_ipi_base,
@@ -168,6 +197,8 @@ class AccountInvoiceLine(models.Model):
             'irrf_base_calculo': sum([x['base'] for x in irrf]),
             'irrf_valor': sum([x['amount'] for x in irrf]),
         })
+        if self.product_id and self.price_unit and self.quantity:
+            self._prepare_tax_ibscbs()
 
     @api.multi
     @api.depends('icms_cst_normal', 'icms_csosn_simples',
@@ -699,13 +730,6 @@ class AccountInvoiceLine(models.Model):
             self.inss_aliquota = self.tax_inss_id.amount
         self._update_invoice_line_ids()
 
-    # Reforma tributária - IBS/CBS
-    def _base_ibscbs(self):
-        valor_bruto = self.price_unit * self.quantity
-        desconto = valor_bruto * self.discount / 100.0
-        subtotal = valor_bruto - desconto
-        return subtotal
-
     @api.onchange('tax_ibsuf_id')
     def _onchange_tax_ibsuf_id(self):
         if self.tax_ibsuf_id:
@@ -724,6 +748,13 @@ class AccountInvoiceLine(models.Model):
     @api.onchange('tax_cbs_id')
     def _onchange_tax_cbs_id(self):
         if self.tax_cbs_id:
+            self.cbs_aliquota = self.tax_cbs_id.amount
+            self.cbs_valor = self.ibscbs_base_calculo * (self.cbs_aliquota / 100)
+        self._update_invoice_line_ids()
+
+    @api.onchange('ibscbs_cst')
+    def _onchange_ibscbs_cst(self):
+        if self.ibscbs_cst:
             self.cbs_aliquota = self.tax_cbs_id.amount
             self.cbs_valor = self.ibscbs_base_calculo * (self.cbs_aliquota / 100)
         self._update_invoice_line_ids()

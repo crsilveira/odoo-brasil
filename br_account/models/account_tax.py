@@ -85,6 +85,7 @@ class AccountTax(models.Model):
                                ('ibsuf', 'IBS UF'),
                                ('ibsmun', 'IBS MUN'),
                                ('cbs', 'CBS'),
+                               ('ibscbs', 'IBS/CBS'),
                                ('outros', 'Outros')], string="Tipo")
     amount_type = fields.Selection(selection_add=[('icmsst', 'ICMS ST')])
     difal_por_dentro = fields.Boolean(string="Calcular Difal por Dentro?")

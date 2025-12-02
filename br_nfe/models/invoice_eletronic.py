@@ -479,19 +479,20 @@ class InvoiceEletronic(models.Model):
             line = item.account_invoice_line_id
             imposto['IBSCBS'] = {
                 'CST': line.ibscbs_cst[:3],
-                'cClassTrib': line.ibscbs_cst[3:],
+                'cClassTrib': line.ibscbs_cst,
                 'gIBSCBS': {
                     'vBC': "%.02f" % line.ibscbs_base_calculo,
                     'gIBSUF': {
-                        'pIBSUF': line.ibsuf_aliquota,
+                        'pIBSUF': "%.02f" % line.ibsuf_aliquota,
                         'vIBSUF': "%.02f" % line.ibsuf_valor,
                     },
                     'gIBSMun': {
-                        'pIBSMun': line.ibsmun_aliquota,
+                        'pIBSMun': "%.02f" % line.ibsmun_aliquota,
                         'vIBSMun': "%.02f" % line.ibsmun_valor,
                     },
+                    'vIBS': "%.02f" % (line.ibsmun_valor + line.ibsuf_valor),
                     'gCBS': {
-                        'pCBS': line.cbs_aliquota,
+                        'pCBS': "%.02f" % line.cbs_aliquota,
                         'vCBS': "%.02f" % line.cbs_valor,
                     },
                 }
@@ -710,11 +711,25 @@ class InvoiceEletronic(models.Model):
         eletronic_items = []
         desconto = 0.0
         tt = 0.0
+        vBC_IBSCBS = 0.0
+        vIBSUF_TOTAL = 0.0
+        vIBSMun_TOTAL = 0.0
+        vCBS_TOTAL = 0.0
+        IBSCBS_present = False
         for item in self.eletronic_item_ids:
             eletronic_items.append(
                 self._prepare_eletronic_invoice_item(item, self))
             desconto += item.desconto
             tt += item.valor_liquido
+            if item.account_invoice_line_id.ibscbs_cst:
+                # Retorma tributária
+                line = item.account_invoice_line_id
+                vBC_IBSCBS += line.ibscbs_base_calculo
+                vIBSUF_TOTAL += line.ibsuf_valor
+                vIBSMun_TOTAL += line.ibsmun_valor
+                vCBS_TOTAL += line.cbs_valor
+                IBSCBS_present = True
+
         total = {
             # ICMS
             'vBC': "%.02f" % self.valor_bc_icms,
@@ -740,6 +755,12 @@ class InvoiceEletronic(models.Model):
             'vICMSUFDest': "%.02f" % self.valor_icms_uf_dest,
             'vICMSUFRemet': "%.02f" % self.valor_icms_uf_remet,
             'vTotTrib': "%.02f" % self.valor_estimado_tributos,
+            'vBC_IBSCBS': "%.02f" % vBC_IBSCBS,
+            'vIBSUF_Total': "%.02f" % vIBSUF_TOTAL,
+            'vIBSMun_Total': "%.02f" % vIBSMun_TOTAL,
+            'vIBS_Total': "%.02f" % (vIBSUF_TOTAL + vIBSMun_TOTAL),
+            'vCBS_Total': "%.02f" % vCBS_TOTAL,
+            'IBSCBS_Present': IBSCBS_present,
         }
         if self.valor_servicos > 0.0:
             issqn_total = {
