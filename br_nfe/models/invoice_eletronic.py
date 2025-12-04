@@ -477,6 +477,23 @@ class InvoiceEletronic(models.Model):
         if item.account_invoice_line_id.ibscbs_cst:
             # Retorma tributária
             line = item.account_invoice_line_id
+            ibs_aliq_efetiva = 0.0
+            ibs_red = False
+            if line.ibsuf_aliquota and line.ibs_red:
+                ibs_red = True
+                ibs_aliq_efetiva = line.ibsuf_aliquota - (
+                    line.ibsuf_aliquota * (line.ibs_red / 100))
+            ibsmun_aliq_efetiva = 0.0
+            if line.ibsmun_aliquota and line.ibs_red:
+                ibs_red = True
+                ibsmun_aliq_efetiva = line.ibsmun_aliquota - (
+                    line.ibsmun_aliquota * (line.ibs_red / 100))
+            cbs_aliq_efetiva = 0.0
+            cbs_red = False
+            if line.cbs_aliquota and line.cbs_red:
+                cbs_red = True
+                cbs_aliq_efetiva += line.cbs_aliquota - (
+                    line.cbs_aliquota * (line.cbs_red / 100))
             imposto['IBSCBS'] = {
                 'CST': line.ibscbs_cst[:3],
                 'cClassTrib': line.ibscbs_cst,
@@ -484,15 +501,30 @@ class InvoiceEletronic(models.Model):
                     'vBC': "%.02f" % line.ibscbs_base_calculo,
                     'gIBSUF': {
                         'pIBSUF': "%.02f" % line.ibsuf_aliquota,
+                        'ibs_red': ibs_red,
+                        'gRed': {
+                            'pRedAliq': "%.02f" % line.ibs_red or 0.0,
+                            'pAliqEfet': "%0.02f" % ibs_aliq_efetiva,
+                        },
                         'vIBSUF': "%.02f" % line.ibsuf_valor,
                     },
                     'gIBSMun': {
                         'pIBSMun': "%.02f" % line.ibsmun_aliquota,
+                        'ibs_red': ibs_red,
+                        'gRed': {
+                            'pRedAliq': "%.02f" % line.ibs_red,
+                            'pAliqEfet': "%0.02f" % ibsmun_aliq_efetiva,
+                        },
                         'vIBSMun': "%.02f" % line.ibsmun_valor,
                     },
                     'vIBS': "%.02f" % (line.ibsmun_valor + line.ibsuf_valor),
                     'gCBS': {
                         'pCBS': "%.02f" % line.cbs_aliquota,
+                        'cbs_red': cbs_red,
+                        'gRed': {
+                            'pRedAliq': "%.02f" % line.cbs_red,
+                            'pAliqEfet': "%0.02f" % cbs_aliq_efetiva,
+                        },
                         'vCBS': "%.02f" % line.cbs_valor,
                     },
                 }

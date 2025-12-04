@@ -80,6 +80,8 @@ class AccountFiscalPositionTaxRule(models.Model):
                                      domain=[('domain', '=', 'ibsmun')])
     tax_cbs_id = fields.Many2one('account.tax', string=u"CBS",
                                      domain=[('domain', '=', 'cbs')])
+    reducao_ibs = fields.Float(string=u"Redução IBS")
+    reducao_cbs = fields.Float(string=u"Redução CBS")
 
 
 class AccountFiscalPosition(models.Model):

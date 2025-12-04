@@ -34,24 +34,42 @@ class AccountInvoiceLine(models.Model):
     def _prepare_tax_ibscbs(self):
         if self.invoice_id.fiscal_position_id and self.invoice_id.fiscal_position_id.ibscbs_tax_rule_ids:
             for ibscbs in self.invoice_id.fiscal_position_id.ibscbs_tax_rule_ids:
+                base_ibscbs = self._base_ibscbs()
+                base_ibs = base_ibscbs
+                base_cbs = base_ibscbs
+                if ibscbs.reducao_ibs:
+                    base_ibs = base_ibs - (base_ibs * (ibscbs.reducao_ibs / 100))
+                    self.ibs_red = ibscbs.reducao_ibs
+                if ibscbs.reducao_cbs:
+                    base_cbs = base_cbs - (base_cbs * (ibscbs.reducao_cbs / 100))
+                    self.cbs_red = ibscbs.reducao_cbs
                 self.ibscbs_cst = ibscbs.cst_ibscbs
-                self.ibscbs_base_calculo = self._base_ibscbs()
+                self.ibscbs_base_calculo = base_ibscbs
                 self.ibsuf_aliquota = ibscbs.tax_ibsuf_id.amount
-                self.ibsuf_valor = self.ibscbs_base_calculo * (ibscbs.tax_ibsuf_id.amount / 100)
+                self.ibsuf_valor = base_ibs * (ibscbs.tax_ibsuf_id.amount / 100)
                 self.ibsmun_aliquota = ibscbs.tax_ibsmun_id.amount
-                self.ibsmun_valor = self.ibscbs_base_calculo * (ibscbs.tax_ibsmun_id.amount / 100)
+                self.ibsmun_valor = base_ibs * (ibscbs.tax_ibsmun_id.amount / 100)
                 self.cbs_aliquota = ibscbs.tax_cbs_id.amount
-                self.cbs_valor = self.ibscbs_base_calculo * (ibscbs.tax_cbs_id.amount / 100)
+                self.cbs_valor = base_cbs * (ibscbs.tax_cbs_id.amount / 100)
         elif self.invoice_id.company_id.ibscbs_cst:
+            base_ibscbs = self._base_ibscbs()
+            base_ibs = base_ibscbs
+            base_cbs = base_ibscbs
+            if self.invoice_id.company_id.ibs_red:
+                self.ibs_red = self.invoice_id.company_id.ibs_red
+                base_ibs = base_ibs - (base_ibs * (self.invoice_id.company_id.ibs_red / 100))
+            if self.invoice_id.company_id.cbs_red:
+                self.cbs_red = self.invoice_id.company_id.cbs_red
+                base_cbs = base_cbs - (base_cbs * (self.invoice_id.company_id.cbs_red / 100))
             self.ibscbs_cst = self.invoice_id.company_id.ibscbs_cst
             self.ibscbs_aliquota = self.invoice_id.company_id.ibsuf_aliquota + self.invoice_id.company_id.ibsmun_aliquota + self.invoice_id.company_id.cbs_aliquota
-            self.ibscbs_base_calculo = self._base_ibscbs()
+            self.ibscbs_base_calculo = base_ibscbs
             self.ibsuf_aliquota = self.invoice_id.company_id.ibsuf_aliquota
-            self.ibsuf_valor = self.ibscbs_base_calculo * (self.invoice_id.company_id.ibsuf_aliquota / 100)
+            self.ibsuf_valor = base_ibs * (self.invoice_id.company_id.ibsuf_aliquota / 100)
             self.ibsmun_aliquota = self.invoice_id.company_id.ibsmun_aliquota
-            self.ibsmun_valor = self.ibscbs_base_calculo * (self.invoice_id.company_id.ibsmun_aliquota / 100)
+            self.ibsmun_valor = base_ibs * (self.invoice_id.company_id.ibsmun_aliquota / 100)
             self.cbs_aliquota = self.invoice_id.company_id.cbs_aliquota
-            self.cbs_valor = self.ibscbs_base_calculo * (self.invoice_id.company_id.cbs_aliquota / 100)
+            self.cbs_valor = base_cbs * (self.invoice_id.company_id.cbs_aliquota / 100)
 
     def _prepare_tax_context(self):
         return {
