@@ -479,18 +479,18 @@ class InvoiceEletronic(models.Model):
             line = item.account_invoice_line_id
             ibs_aliq_efetiva = 0.0
             ibs_red = False
-            if line.ibsuf_aliquota and line.ibs_red:
+            if line.ibs_red:
                 ibs_red = True
                 ibs_aliq_efetiva = line.ibsuf_aliquota - (
                     line.ibsuf_aliquota * (line.ibs_red / 100))
             ibsmun_aliq_efetiva = 0.0
-            if line.ibsmun_aliquota and line.ibs_red:
+            if line.ibs_red:
                 ibs_red = True
                 ibsmun_aliq_efetiva = line.ibsmun_aliquota - (
                     line.ibsmun_aliquota * (line.ibs_red / 100))
             cbs_aliq_efetiva = 0.0
             cbs_red = False
-            if line.cbs_aliquota and line.cbs_red:
+            if line.cbs_red:
                 cbs_red = True
                 cbs_aliq_efetiva += line.cbs_aliquota - (
                     line.cbs_aliquota * (line.cbs_red / 100))

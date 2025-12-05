@@ -219,6 +219,12 @@ class AccountFiscalPosition(models.Model):
                 'cofins_cst': rules[0].cst_cofins,
                 # ISSQN
                 'l10n_br_issqn_deduction': rules[0].l10n_br_issqn_deduction,
+                'tax_ibsuf_id': rules[0].tax_ibsuf_id,
+                'tax_ibsmun_id': rules[0].tax_ibsmun_id,
+                'tax_cbs_id': rules[0].tax_cbs_id,
+                'ibs_red': rules[0].reducao_ibs,
+                'cbs_red': rules[0].reducao_cbs,
+                'ibscbs_cst': rules[0].cst_ibscbs,
             }
         else:
             return{}
@@ -228,7 +234,7 @@ class AccountFiscalPosition(models.Model):
         to_state = partner.state_id
 
         taxes = ('icms', 'simples', 'ipi', 'pis', 'cofins',
-                 'issqn', 'ii', 'irrf', 'csll', 'inss', 'ibscbs')
+                 'issqn', 'ii', 'irrf', 'csll', 'inss', 'ibscbs', 'ibsuf', 'ibsmun', 'cbs')
         res = {}
         for tax in taxes:
             vals = self._filter_rules(

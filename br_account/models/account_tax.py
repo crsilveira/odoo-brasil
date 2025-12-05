@@ -317,6 +317,33 @@ class AccountTax(models.Model):
             taxes.append(vals)
         return taxes
 
+    def _compute_ibsmun(self, price_base):
+        ibscbs_tax = self.filtered(lambda x: x.domain == 'ibsmun')
+        if not ibscbs_tax:
+            return []
+        vals = self._tax_vals(ibscbs_tax)
+        vals['amount'] = ibscbs_tax._compute_amount(price_base, 1.0)
+        vals['base'] = price_base
+        return [vals]
+
+    def _compute_ibsuf(self, price_base):
+        ibscbs_tax = self.filtered(lambda x: x.domain == 'ibsuf')
+        if not ibscbs_tax:
+            return []
+        vals = self._tax_vals(ibscbs_tax)
+        vals['amount'] = ibscbs_tax._compute_amount(price_base, 1.0)
+        vals['base'] = price_base
+        return [vals]
+
+    def _compute_cbs(self, price_base):
+        ibscbs_tax = self.filtered(lambda x: x.domain == 'cbs')
+        if not ibscbs_tax:
+            return []
+        vals = self._tax_vals(ibscbs_tax)
+        vals['amount'] = ibscbs_tax._compute_amount(price_base, 1.0)
+        vals['base'] = price_base
+        return [vals]
+
     def _compute_ii(self, price_base):
         ii_tax = self.filtered(lambda x: x.domain == 'ii')
         if not ii_tax:
@@ -378,6 +405,9 @@ class AccountTax(models.Model):
         taxes += self._compute_pis_cofins(price_base)
         taxes += self._compute_issqn(price_base)
         taxes += self._compute_ii(price_base)
+        taxes += self._compute_ibsmun(price_base)
+        taxes += self._compute_ibsuf(price_base)
+        taxes += self._compute_cbs(price_base)
         taxes += self._compute_retention(price_base)
         taxes += self._compute_others(price_base)
         return taxes

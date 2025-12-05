@@ -443,16 +443,19 @@
                                 <group>
                                     <field name="tax_ibsuf_id" />
                                     <field name="ibsuf_aliquota" />
+                                    <field name="ibs_red" />
                                     <field name="ibsuf_valor" />
                                 </group>
                                 <group>
                                     <field name="tax_ibsmun_id" />
                                     <field name="ibsmun_aliquota" />
+                                    <!-- <field name="ibs_red" /> -->
                                     <field name="ibsmun_valor" />
                                 </group>
                                 <group>
                                     <field name="tax_cbs_id" />
                                     <field name="cbs_aliquota" />
+                                    <field name="cbs_red" />
                                     <field name="cbs_valor" />
                                 </group>
                             </group>
