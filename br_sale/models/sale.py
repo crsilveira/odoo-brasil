@@ -261,6 +261,14 @@ class SaleOrderLine(models.Model):
 
         return res
 
+    # Reforma tributária - IBS/CBS
+    def _base_ibscbs(self):
+        valor_bruto = self.price_subtotal
+        desconto = valor_bruto * self.valor_desconto / 100.0
+        subtotal = valor_bruto - desconto
+        # subtotal = subtotal - self.ipi_valor - self.pis_valor - self.cofins_valor - self.icms_valor - self.icms_st_valor
+        return subtotal
+
     @api.multi
     def _prepare_invoice_line(self, qty):
         res = super(SaleOrderLine, self)._prepare_invoice_line(qty)
@@ -298,6 +306,7 @@ class SaleOrderLine(models.Model):
         res['tax_csll_id'] = csll and csll.id or False
         res['tax_irrf_id'] = irrf and irrf.id or False
         res['tax_inss_id'] = inss and inss.id or False
+        # res['tax_cbs_id'] = cbs and cbs.id or False
 
         res['product_type'] = self.product_id.fiscal_type or 'product'
         res['company_fiscal_type'] = self.company_id.fiscal_type
@@ -307,6 +316,7 @@ class SaleOrderLine(models.Model):
         res['fiscal_classification_id'] = ncm.id
         res['service_type_id'] = service.id
         res['icms_origem'] = self.product_id.origin
+        # res['ibscbs_cst'] = ibscbs or self.company_id.ibscbs_cst
 
         if self.product_id.fiscal_type == 'service':
             res['tributos_estimados_federais'] = \
@@ -360,4 +370,45 @@ class SaleOrderLine(models.Model):
         res['csll_aliquota'] = csll.amount or 0.0
         res['inss_aliquota'] = inss.amount or 0.0
         res['irrf_aliquota'] = irrf.amount or 0.0
+
+        # Reforma tributária - IBS/CBS
+        if self.order_id.fiscal_position_id:
+            if self.order_id.fiscal_position_id.ibscbs_tax_rule_ids:
+                for ibscbs in self.order_id.fiscal_position_id.ibscbs_tax_rule_ids:
+                    base_ibscbs = self._base_ibscbs()
+                    base_ibs = base_ibscbs
+                    base_cbs = base_ibscbs
+                    if ibscbs.reducao_ibs:
+                        base_ibs = base_ibs - (base_ibs * (ibscbs.reducao_ibs / 100))
+                        res['ibs_red'] = ibscbs.reducao_ibs
+                    if ibscbs.reducao_cbs:
+                        base_cbs = base_cbs - (base_cbs * (ibscbs.reducao_cbs / 100))
+                        res['cbs_red'] = ibscbs.reducao_cbs
+                    res['ibscbs_cst'] = ibscbs.cst_ibscbs
+                    res['ibscbs_base_calculo'] = base_ibscbs
+                    res['ibsuf_aliquota'] = ibscbs.tax_ibsuf_id.amount
+                    res['ibsuf_valor'] = base_ibs * (ibscbs.tax_ibsuf_id.amount / 100)
+                    res['ibsmun_aliquota'] = ibscbs.tax_ibsmun_id.amount
+                    res['ibsmun_valor'] = base_ibs * (ibscbs.tax_ibsmun_id.amount / 100)
+                    res['cbs_aliquota'] = ibscbs.tax_cbs_id.amount
+                    res['cbs_valor'] = base_cbs * (ibscbs.tax_cbs_id.amount / 100)
+            elif self.order_id.company_id.ibscbs_cst:
+                res['ibscbs_cst'] = self.order_id.company_id.ibscbs_cst
+                base_ibscbs = self._base_ibscbs()
+                base_ibs = base_ibscbs
+                base_cbs = base_ibscbs
+                if self.order_id.company_id.ibs_red:
+                    res['ibs_red'] = self.order_id.company_id.ibs_red
+                    base_ibs = base_ibs - (base_ibs * (self.order_id.company_id.ibs_red / 100))
+                if self.order_id.company_id.cbs_red:
+                    res['cbs_red'] = self.order_id.company_id.cbs_red
+                    base_cbs = base_cbs - (base_cbs * (self.order_id.company_id.cbs_red / 100))
+                res['ibscbs_aliquota']  = self.order_id.company_id.ibsuf_aliquota + self.order_id.company_id.ibsmun_aliquota + self.order_id.company_id.cbs_aliquota
+                res['ibscbs_base_calculo'] = base_ibscbs
+                res['ibsuf_aliquota'] = self.order_id.company_id.ibsuf_aliquota
+                res['ibsuf_valor'] = base_ibs * (self.order_id.company_id.ibsuf_aliquota / 100)
+                res['ibsmun_aliquota'] = self.order_id.company_id.ibsmun_aliquota
+                res['ibsmun_valor'] = base_ibs * (self.order_id.company_id.ibsmun_aliquota / 100)
+                res['cbs_aliquota'] = self.order_id.company_id.cbs_aliquota
+                res['cbs_valor'] = base_cbs * (self.order_id.company_id.cbs_aliquota / 100)
         return res
