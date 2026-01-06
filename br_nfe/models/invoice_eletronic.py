@@ -881,7 +881,10 @@ class InvoiceEletronic(models.Model):
             })
         transp['vol'] = volumes
 
+        dt_emissao_nf = dt_emissao[:10]
+
         duplicatas = []
+        vencimento = fields.Datetime.from_string(self.invoice_id.date_due)
         for dup in self.duplicata_ids:
             vencimento = fields.Datetime.from_string(dup.data_vencimento)
             duplicatas.append({
@@ -889,16 +892,18 @@ class InvoiceEletronic(models.Model):
                 'dVenc':  vencimento.strftime('%Y-%m-%d'),
                 'vDup': "%.02f" % dup.valor
             })
-        cobr = {
-            'fat': {
-                'nFat': self.numero_fatura or '',
-                'vOrig': "%.02f" % (
-                    self.fatura_liquido + self.fatura_desconto),
-                'vDesc': "%.02f" % self.fatura_desconto,
-                'vLiq': "%.02f" % self.fatura_liquido,
-            },
-            'dup': duplicatas
-        }
+        vencimento_nf = vencimento.strftime('%Y-%m-%d')
+        if dt_emissao_nf != vencimento_nf:
+            cobr = {
+                'fat': {
+                    'nFat': self.numero_fatura or '',
+                    'vOrig': "%.02f" % (
+                        self.fatura_liquido + self.fatura_desconto),
+                    'vDesc': "%.02f" % self.fatura_desconto,
+                    'vLiq': "%.02f" % self.fatura_liquido,
+                },
+                'dup': duplicatas
+            }
         pag = {
             'indPag': self.payment_term_id.indPag or '0',
             'tPag': self.payment_mode_id.tipo_pagamento or '90',
@@ -960,7 +965,8 @@ class InvoiceEletronic(models.Model):
             })
         if len(duplicatas) > 0 and\
                 self.fiscal_position_id.finalidade_emissao not in ('2', '4'):
-            vals['cobr'] = cobr
+            if dt_emissao_nf != vencimento_nf:
+                vals['cobr'] = cobr
             pag['tPag'] = '01' if pag['tPag'] == '90' else pag['tPag']
             pag['vPag'] = "%.02f" % self.valor_final
 
@@ -1076,6 +1082,7 @@ class InvoiceEletronic(models.Model):
         xml_enviar = xml_autorizar_nfe(certificado, **lote)
 
         mensagens_erro = valida_nfe(xml_enviar)
+        # preciso atualizar os schemas
         mensagens_erro = ''
         if mensagens_erro:
             raise UserError(mensagens_erro)
