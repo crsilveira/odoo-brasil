@@ -61,6 +61,8 @@ class InutilizedNfe(models.Model):
         docs = self.env['invoice.eletronic'].search([
             ('numero', '>=', self.numeration_start),
             ('numero', '<=', self.numeration_end),
+            ('serie_documento', '=', self.serie.code),
+            ('emissao_doc', '=', '1'),
             ('company_id', '=', self.env.user.company_id.id),
             ('model', '=', self.modelo),
         ])
