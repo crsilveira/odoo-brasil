@@ -392,6 +392,10 @@ class InvoiceEletronic(models.Model):
 
         prod["DI"] = di_vals
 
+        # incluindo cBenef
+        if item.account_invoice_line_id.cbenef_id:
+            prod['cBenef'] = item.account_invoice_line_id.cbenef_id.code
+
         imposto = {
             'vTotTrib': "%.02f" % item.tributos_estimados,
             'PIS': {
