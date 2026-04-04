@@ -69,24 +69,19 @@ class AccountInvoice(models.Model):
         return super(AccountInvoice, self)._return_pdf_invoice(doc)
 
     def action_number(self, serie_id):
-        #if not serie_id:
-        #    return
 
-        #inv_inutilized = self.env['invoice.eletronic.inutilized'].search([
-        #    ('serie', '=', serie_id.id)], order='numeration_end desc', limit=1)
+        # 02/04/2026 - Carlos
+        # adicionei no search abaixo o
+        # state = 'done', isso pode ser um problema
+        # se cancelar a ultima nota vai dar conflito
+        # mas sem isso qdo existir numeracao alta mesmo
+        # que cancelada o sistema  vai considerar
 
-        #if not inv_inutilized:
-        #    return serie_id.internal_sequence_id.next_by_id()
-
-        #if inv_inutilized.numeration_end >= \
-        #        serie_id.internal_sequence_id.number_next_actual:
-        #    serie_id.internal_sequence_id.sudo().write(
-        #        {'number_next_actual': inv_inutilized.numeration_end + 1})
-        #return serie_id.internal_sequence_id.next_by_id()
         nfe = self.env['invoice.eletronic']
         number_fim = nfe.search([
             ('serie', '=', serie_id.id),
             ('model', '=', '55'),
+            ('state', '=', 'done'),
             ('emissao_doc', '=', '1')],
             order='numero desc', limit=1).numero + 1
         # verificando o ultimo numero nfe usado
@@ -96,6 +91,7 @@ class AccountInvoice(models.Model):
                 ('serie', '=', serie_id.id),
                 ('numero','=',self.nfe_number_static),
                 ('model','=','55'),
+                ('state', '=', 'done'),
                 ('emissao_doc','=','1'),
                 ], order='numero desc', limit=1)
             if number:
