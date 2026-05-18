@@ -222,6 +222,9 @@ class SpedEfdContribuicoes(models.Model):
             
         for item_lista in self.query_registro0400(periodo):
             arq.read_registro(self.junta_pipe(item_lista))
+
+        for item_lista in self.query_registro0450(periodo):
+            arq.read_registro(self.junta_pipe(item_lista))
            
         # TODO - Colocar Na Tela pra ser informado a CONTA e DESCRICAO
         reg500 = Registro0500()
@@ -277,7 +280,9 @@ class SpedEfdContribuicoes(models.Model):
                 #for item_lista in self.query_registroC101(self.fatura):
                 #    arq.read_registro(self.junta_pipe(item_lista))
 
-            # TODO C110 - Inf. Adiciontal
+            # C110 - Inf. Adiciontal
+            for item_lista in self.query_registroC110(id[0]):
+                arq.read_registro(self.junta_pipe(item_lista))
             
             # TODO C170 - Itens Nota Fiscal de Compras = Fazendo
             for item_lista in self.query_registroC170(id[0]):
@@ -551,6 +556,41 @@ class SpedEfdContribuicoes(models.Model):
             lista.append(registro_0400)
         return lista        
 
+    def query_registro0450(self, periodo):
+        query = """
+                    select distinct
+                        obs.id, obs.message
+                    from
+                        account_invoice as d
+                    inner join
+                        invoice_eletronic as ie
+                            on ie.invoice_id = d.id
+                    inner join
+                        account_fiscal_position_br_account_fiscal_observation_rel as obs_rel
+                            on obs_rel.account_fiscal_position_id = d.fiscal_position_id
+                    inner join
+                        br_account_fiscal_observation as obs
+                            on obs.id = obs_rel.br_account_fiscal_observation_id
+                    left join
+                        br_account_fiscal_document fd 
+                            on fd.id = d.product_document_id
+                    where
+                        %s
+                        and (ie.model in ('55','01'))
+                        and ie.state in ('done')
+                        and d.fiscal_position_id is not null 
+                """ % (periodo)
+        self._cr.execute(query)
+        query_resposta = self._cr.fetchall()
+        lista = []
+        for resposta in query_resposta:
+            resposta_inf = self.env['br_account.fiscal.observation'].browse(resposta[0])
+            registro_0450 = registros.Registro0450()
+            registro_0450.COD_INF = str(resposta_inf.id)
+            registro_0450.TXT = resposta_inf.message
+            lista.append(registro_0450)
+        return lista
+
     def transforma_valor(self, valor):
         valor = ("%.2f" % (float(valor)))
         return str(valor).replace('.', ',')
@@ -603,6 +643,19 @@ class SpedEfdContribuicoes(models.Model):
                     registro_c100.VL_COFINS = self.transforma_valor(nf.valor_cofins)
                     registro_c100.COD_PART = str(nf.partner_id.id)
                 lista.append(registro_c100)
+        return lista
+
+    def query_registroC110(self, doc):
+        lista = []
+        nfe_ids = self.env['invoice.eletronic'].browse(doc)
+        for nf in nfe_ids:    
+            if (nf.state == 'done') and (nf.model == '55') and nf.informacao_adicional:
+                for det_obs in nf.informacoes_legais.fiscal_observation_ids:
+                    if det_obs.message[20:] in nf.informacao_adicional:
+                        registro_c110 = registros.RegistroC110()
+                        registro_c110.COD_INF = det_obs.id
+                        registro_c110.TXT_COMPL = det_obs.name
+                        lista.append(registro_c110)
         return lista
 
     def query_registroC170(self, doc):
