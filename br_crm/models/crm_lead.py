@@ -74,7 +74,7 @@ class CrmLead(models.Model):
     @api.onchange('cnpj')
     def onchange_mask_cnpj(self):
         if self.cnpj:
-            val = re.sub('[^0-9]', '', self.cnpj)
+            val = re.sub('[^a-zA-Z0-9]', '', self.cnpj)
             if len(val) == 14:
                 cnpj_cpf = "%s.%s.%s/%s-%s"\
                     % (val[0:2], val[2:5], val[5:8], val[8:12], val[12:14])
@@ -102,7 +102,7 @@ class CrmLead(models.Model):
         res = super(CrmLead, self)._onchange_partner_id_values(partner_id)
         if partner_id:
             partner = self.env['res.partner'].browse(partner_id)
-            val = re.sub('[^0-9]', '', partner.cnpj_cpf or '')
+            val = re.sub('[^a-zA-Z0-9]', '', partner.cnpj_cpf or '')
             if len(val) == 11:
                 cnpj_cpf = 'cpf'
             else:

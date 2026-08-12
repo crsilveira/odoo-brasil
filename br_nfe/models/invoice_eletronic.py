@@ -598,7 +598,7 @@ class InvoiceEletronic(models.Model):
                     'refNF': {
                         'cUF': doc.state_id.ibge_code,
                         'AAMM': data.strftime("%y%m"),
-                        'CNPJ': re.sub('[^0-9]', '', doc.cnpj_cpf),
+                        'CNPJ': re.sub('[^a-zA-Z0-9]', '', doc.cnpj_cpf),
                         'mod': doc.fiscal_document_id.code,
                         'serie': doc.serie,
                         'nNF': doc.internal_number,
@@ -610,7 +610,7 @@ class InvoiceEletronic(models.Model):
                     'refCTe': doc.access_key
                 })
             elif doc.document_type == 'nfrural':
-                cnpj_cpf = re.sub('[^0-9]', '', doc.cnpj_cpf)
+                cnpj_cpf = re.sub('[^a-zA-Z0-9]', '', doc.cnpj_cpf)
                 documentos.append({
                     'refNFP': {
                         'cUF': doc.state_id.ibge_code,
@@ -635,7 +635,7 @@ class InvoiceEletronic(models.Model):
         ide['NFref'] = documentos
         emit = {
             'tipo': self.company_id.partner_id.company_type,
-            'cnpj_cpf': re.sub('[^0-9]', '', self.company_id.cnpj_cpf),
+            'cnpj_cpf': re.sub('[^a-zA-Z0-9]', '', self.company_id.cnpj_cpf),
             'xNome': self.company_id.legal_name,
             'xFant': self.company_id.name,
             'enderEmit': {
@@ -667,7 +667,7 @@ class InvoiceEletronic(models.Model):
             partner = self.commercial_partner_id
             dest = {
                 'tipo': partner.company_type,
-                'cnpj_cpf': re.sub('[^0-9]', '', partner.cnpj_cpf or ''),
+                'cnpj_cpf': re.sub('[^a-zA-Z0-9]', '', partner.cnpj_cpf or ''),
                 'xNome': partner.legal_name or partner.name,
                 'enderDest': {
                     'xLgr': partner.street,
@@ -729,7 +729,7 @@ class InvoiceEletronic(models.Model):
                 'fone': re.sub('[^0-9]', '', shipping_id.phone or '')
             }
             cnpj_cpf = re.sub(
-                "[^0-9]", "", shipping_id.cnpj_cpf or partner.cnpj_cpf or ""
+                "[^a-zA-Z0-9]", "", shipping_id.cnpj_cpf or partner.cnpj_cpf or ""
             )
 
             if len(cnpj_cpf) == 14:
@@ -741,7 +741,7 @@ class InvoiceEletronic(models.Model):
         if self.company_id.accountant_id:
             autorizados.append({
                 'CNPJ': re.sub(
-                    '[^0-9]', '', self.company_id.accountant_id.cnpj_cpf)
+                    '[^a-zA-Z0-9]', '', self.company_id.accountant_id.cnpj_cpf)
             })
 
         eletronic_items = []
@@ -856,7 +856,7 @@ class InvoiceEletronic(models.Model):
                 'RNTC': self.rntc or '',
             }
         }
-        cnpj_cpf = re.sub('[^0-9]', '', self.transportadora_id.cnpj_cpf or '')
+        cnpj_cpf = re.sub('[^a-zA-Z0-9]', '', self.transportadora_id.cnpj_cpf or '')
         if self.transportadora_id.is_company:
             transp['transporta']['CNPJ'] = cnpj_cpf
         else:
@@ -935,7 +935,7 @@ class InvoiceEletronic(models.Model):
                 raise UserError(
                     "Adicione um contato para o responsável técnico!")
 
-            cnpj = re.sub('[^0-9]', '', responsavel_tecnico.cnpj_cpf)
+            cnpj = re.sub('[^a-zA-Z0-9]', '', responsavel_tecnico.cnpj_cpf)
             fone = re.sub('[^0-9]', '', responsavel_tecnico.phone or '')
             infRespTec = {
                 'CNPJ': cnpj or '',
@@ -1061,7 +1061,7 @@ class InvoiceEletronic(models.Model):
         if self.emissao_doc == '2' or (self.model and self.model not in ('55', '65')):
             return
         chave_dict = {
-            'cnpj': re.sub('[^0-9]', '', self.company_id.cnpj_cpf),
+            'cnpj': re.sub('[^a-zA-Z0-9]', '', self.company_id.cnpj_cpf),
             'estado': self.company_id.state_id.ibge_code,
             'emissao': self.data_emissao.strftime("%y%m"),
             'modelo': self.model,
@@ -1266,7 +1266,7 @@ class InvoiceEletronic(models.Model):
                 'Id': id_canc,
                 'cOrgao': self.company_id.state_id.ibge_code,
                 'tpAmb': 2 if self.ambiente == 'homologacao' else 1,
-                'CNPJ': re.sub('[^0-9]', '', self.company_id.cnpj_cpf),
+                'CNPJ': re.sub('[^a-zA-Z0-9]', '', self.company_id.cnpj_cpf),
                 'chNFe': self.chave_nfe,
                 'dhEvento': dt_evento,
                 'nSeqEvento': self.sequencial_evento,

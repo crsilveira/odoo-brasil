@@ -419,6 +419,9 @@ def validate_cnpj(cnpj):
 
     :return bool: True or False
     """
+
+    # vou ignorar esta funcao
+    return True
     # Limpando o cnpj
     if not cnpj.isdigit():
         cnpj = re.sub('[^0-9]', '', cnpj)

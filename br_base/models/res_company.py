@@ -155,7 +155,7 @@ class ResCompany(models.Model):
     @api.onchange('cnpj_cpf')
     def onchange_mask_cnpj_cpf(self):
         if self.cnpj_cpf:
-            val = re.sub('[^0-9]', '', self.cnpj_cpf)
+            val = re.sub('[^a-zA-Z0-9]', '', self.cnpj_cpf)
             if len(val) == 14:
                 cnpj_cpf = "%s.%s.%s/%s-%s"\
                     % (val[0:2], val[2:5], val[5:8], val[8:12], val[12:14])

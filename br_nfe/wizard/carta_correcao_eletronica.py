@@ -73,7 +73,7 @@ class WizardCartaCorrecaoEletronica(models.TransientModel):
             'eventos': [{
                 'invoice_id': self.eletronic_doc_id.id,
                 'CNPJ': re.sub(
-                    "[^0-9]", "", self.eletronic_doc_id.company_id.cnpj_cpf),
+                    "[^a-zA-Z0-9]", "", self.eletronic_doc_id.company_id.cnpj_cpf),
                 'cOrgao':  self.eletronic_doc_id.company_id.state_id.ibge_code,
                 'tpAmb': self.eletronic_doc_id.company_id.tipo_ambiente,
                 'dhEvento':  dt_evento.strftime('%Y-%m-%dT%H:%M:%S-03:00'),

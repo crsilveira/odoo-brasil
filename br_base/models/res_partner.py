@@ -141,7 +141,7 @@ class ResPartner(models.Model):
     def _onchange_cnpj_cpf(self):
         country_code = self.country_id.code or ''
         if self.cnpj_cpf and country_code.upper() == 'BR':
-            val = re.sub('[^0-9]', '', self.cnpj_cpf)
+            val = re.sub('[^a-zA-Z0-9]', '', self.cnpj_cpf)
             if len(val) == 14:
                 cnpj_cpf = "%s.%s.%s/%s-%s"\
                     % (val[0:2], val[2:5], val[5:8], val[8:12], val[12:14])
@@ -194,7 +194,7 @@ class ResPartner(models.Model):
             cert = company.with_context({'bin_size': False}).nfe_a1_file
             cert_pfx = base64.decodestring(cert)
             certificado = Certificado(cert_pfx, company.nfe_a1_password)
-            cnpj = re.sub('[^0-9]', '', self.cnpj_cpf)
+            cnpj = re.sub('[^a-zA-Z0-9]', '', self.cnpj_cpf)
             obj = {'cnpj': cnpj, 'estado': self.state_id.code}
             resposta = consulta_cadastro(certificado, obj=obj, ambiente=1,
                                          estado=self.state_id.ibge_code)
