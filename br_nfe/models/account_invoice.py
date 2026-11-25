@@ -69,19 +69,12 @@ class AccountInvoice(models.Model):
         return super(AccountInvoice, self)._return_pdf_invoice(doc)
 
     def action_number(self, serie_id):
-
-        # 02/04/2026 - Carlos
-        # adicionei no search abaixo o
-        # state = 'done', isso pode ser um problema
-        # se cancelar a ultima nota vai dar conflito
-        # mas sem isso qdo existir numeracao alta mesmo
-        # que cancelada o sistema  vai considerar
-
         nfe = self.env['invoice.eletronic']
         number_fim = nfe.search([
             ('serie', '=', serie_id.id),
             ('model', '=', '55'),
-            ('state', '=', 'done'),
+            ('company_id', '=', self.company_id.id),
+            ('create_date', '>', '2026-04-01 12:00:00'),
             ('emissao_doc', '=', '1')],
             order='numero desc', limit=1).numero + 1
         # verificando o ultimo numero nfe usado
@@ -91,7 +84,8 @@ class AccountInvoice(models.Model):
                 ('serie', '=', serie_id.id),
                 ('numero','=',self.nfe_number_static),
                 ('model','=','55'),
-                ('state', '=', 'done'),
+                ('company_id', '=', self.company_id.id),
+                ('create_date', '>', '2026-04-01 12:00:00'),
                 ('emissao_doc','=','1'),
                 ], order='numero desc', limit=1)
             if number:

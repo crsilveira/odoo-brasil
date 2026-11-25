@@ -102,7 +102,7 @@ class CrmLead(models.Model):
         res = super(CrmLead, self)._onchange_partner_id_values(partner_id)
         if partner_id:
             partner = self.env['res.partner'].browse(partner_id)
-            val = re.sub('[^a-zA-Z0-9]', '', partner.cnpj_cpf or '')
+            val = re.sub('[^0-9]', '', partner.cnpj_cpf or '')
             if len(val) == 11:
                 cnpj_cpf = 'cpf'
             else:

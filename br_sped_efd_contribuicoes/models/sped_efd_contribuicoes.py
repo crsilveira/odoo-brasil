@@ -6,18 +6,22 @@ from unidecode import unidecode
 from datetime import datetime, timedelta
 import pytz
 import base64
+import pudb;pu.db
 from sped.efd.pis_cofins.arquivos import ArquivoDigital
 from sped.efd.pis_cofins import registros
 from sped.efd.pis_cofins.registros import Registro0100
 from sped.efd.pis_cofins.registros import Registro0001
 from sped.efd.pis_cofins.registros import Registro0110
 from sped.efd.pis_cofins.registros import Registro0140
+from sped.efd.pis_cofins.registros import Registro0400
+from sped.efd.pis_cofins.registros import Registro0450
 from sped.efd.pis_cofins.registros import Registro0500
 from sped.efd.pis_cofins.registros import RegistroA001
 from sped.efd.pis_cofins.registros import RegistroA990
 from sped.efd.pis_cofins.registros import RegistroC001
 from sped.efd.pis_cofins.registros import RegistroC010
 from sped.efd.pis_cofins.registros import RegistroC100
+from sped.efd.pis_cofins.registros import RegistroC110
 from sped.efd.pis_cofins.registros import RegistroC170
 from sped.efd.pis_cofins.registros import RegistroD001
 from sped.efd.pis_cofins.registros import RegistroD100
@@ -98,6 +102,8 @@ class SpedEfdContribuicoes(models.Model):
 
     @api.multi
     def create_file(self):
+        print ('xxxxxxxxxxxxxxxxxxxxxxxx')
+        import pudb;pu.db
         if self.date_start > self.date_end:
             raise UserError('Erro, a data de início é maior que a data de encerramento!')
         self.log_faturamento = 'Gerando arquivo .. <br />'
@@ -223,6 +229,7 @@ class SpedEfdContribuicoes(models.Model):
         for item_lista in self.query_registro0400(periodo):
             arq.read_registro(self.junta_pipe(item_lista))
 
+        import pudb;pu.db
         for item_lista in self.query_registro0450(periodo):
             arq.read_registro(self.junta_pipe(item_lista))
            
@@ -269,6 +276,7 @@ class SpedEfdContribuicoes(models.Model):
         regC010.CNPJ = self.limpa_formatacao(self.company_id.cnpj_cpf)
         regC010.IND_ESCRI = '2'
         arq._blocos['C'].add(regC010)
+        import pudb;pu.db
         for id in query_resposta:
             if id[2] == '2' and id[1] == 'cancel':
                 continue
@@ -557,6 +565,7 @@ class SpedEfdContribuicoes(models.Model):
         return lista        
 
     def query_registro0450(self, periodo):
+        import pudb;pu.db
         query = """
                     select distinct
                         obs.id, obs.message
