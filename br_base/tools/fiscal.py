@@ -12,7 +12,7 @@ PARAMETERS = {
     'es': {'tam': 9},
     'ma': {'tam': 9, 'starts_with': '12'},
     'mt': {'tam': 11, 'prod': [3, 2, 9, 8, 7, 6, 5, 4, 3, 2]},
-    'ms': {'tam': 9, 'starts_with': '28'},
+    'ms': {'tam': 9, 'starts_with': ('28', '50')},
     'pa': {'tam': 9, 'starts_with': ('15','75','76','77','78','79')},
     'pb': {'tam': 9},
     'pr': {'tam': 10, 'val_tam': 8, 'prod': [3, 2, 7, 6, 5, 4, 3, 2]},
@@ -419,9 +419,6 @@ def validate_cnpj(cnpj):
 
     :return bool: True or False
     """
-
-    # vou ignorar esta funcao
-    return True
     # Limpando o cnpj
     if not cnpj.isdigit():
         cnpj = re.sub('[^0-9]', '', cnpj)
