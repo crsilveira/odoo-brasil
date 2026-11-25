@@ -86,11 +86,12 @@ class L10nBrPaymentCnabImport(models.TransientModel):
                 if (self.journal_id.bank_id.bic == '001'):
                     codigo_convenio_banco = int(
                         lote.header.codigo_convenio_banco[:9])
-                    if (len(str(codigo_convenio_banco)) == 7):
-                        nosso_numero = evento.numero_documento[2:]
-                    else:
-                        nosso_numero = evento.numero_documento[:8]
-                    #nosso_numero = nosso_numero[8:]
+                    # Carlos 16/07/2026 comentei as 4 linhas e adicionei a 5
+                    #if (len(str(codigo_convenio_banco)) == 7):
+                    #    nosso_numero = evento.numero_documento[2:]
+                    #else:
+                    #    nosso_numero = evento.numero_documento[:8]
+                    nosso_numero = evento.nosso_numero[9:]
                 elif (self.journal_id.bank_id.bic == '237'):
                     nosso_numero = evento.nosso_numero
                 elif (self.journal_id.bank_id.bic == '748'):
@@ -129,7 +130,6 @@ class L10nBrPaymentCnabImport(models.TransientModel):
                     'cnab_code': code,
                     'cnab_message': message,
                 }
-                
                 IMMUTABLE_STATES = ('paid', 'rejected', 'cancelled')
                 if payment_line and payment_line.state in IMMUTABLE_STATES:
                     vals['cnab_message'] = 'Importado previamente'
